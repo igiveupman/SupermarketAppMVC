@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <title>Supermarket App</title>
+</head>
+<body>
+    <nav class="navbar navbar-expand-sm bg-dark navbar-dark">
+      <div class="container-fluid">
+        <a class="navbar-brand" href="/">Supermarket App</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#collapsibleNavbar">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="collapsibleNavbar">
+          <ul class="navbar-nav">
+            <li class="nav-item">
+            </li> 
+            <li class="nav-item">
+              <a class="nav-link" href="/logout">Logout</a>
+            </li> 
+              <li class="nav-item">
+                <a class="nav-link" href="/cart">View Cart</a>
+              </li>
+          </ul>
+        </div>
+      </div>
+    </nav>
+
+  <style>
+    .shop-wrapper {max-width:1200px;margin:0 auto;padding:40px 20px;text-align:center;}
+    .search-bar .form-control {height:54px;font-size:1.05rem;}
+    .search-bar button {height:54px;font-size:1.05rem;}
+    h2 {font-size:2.3rem;font-weight:600;margin-bottom:30px;}
+  table {background:#fff;border-radius:8px;overflow:hidden;table-layout:fixed;width:100%;}
+  thead th {background:#f8f9fa;font-size:1rem;letter-spacing:.5px;border-bottom:2px solid #dee2e6;padding:12px;}
+  tbody td {vertical-align:middle;padding:14px;font-size:1.05rem;}
+  .col-name {width:22%; text-align:left;}
+  .col-img {width:18%;}
+  .col-qty {width:15%;}
+  .col-price {width:15%;}
+  .col-action {width:15%;}
+  .col-img img {display:block;margin:0 auto;}
+    tbody tr:hover {background:#f1f3f5;}
+  .buy-cell form {display:flex;justify-content:center;gap:8px;align-items:center;}
+  .qty-input {width:80px;padding:4px 6px;font-size:.95rem;text-align:center;}
+  </style>
+  <div class="shop-wrapper">
+    <p class="mb-2">Welcome, <strong><%= user.username %></strong> (<%= user.role %>)</p>
+    <h2>Products from Supermarket</h2>
+    <!-- Search and Filter Bar -->
+    <form class="row justify-content-center align-items-center g-3 search-bar mb-4" method="GET" action="/shopping">
+      <div class="col-md-4 col-sm-12">
+        <input type="text" name="search" class="form-control" placeholder="Search products..." value="<%= typeof search !== 'undefined' ? search : '' %>">
+      </div>
+      <div class="col-md-3 col-sm-6">
+        <select name="category" class="form-control">
+          <option value="">All Categories</option>
+          <option value="Bakery" <%= category === 'Bakery' ? 'selected' : '' %>>Bakery</option>
+          <option value="Dairy" <%= category === 'Dairy' ? 'selected' : '' %>>Dairy</option>
+          <option value="Fruits and Vegetables" <%= (category === 'Produce' || category === 'Fruits and Vegetables') ? 'selected' : '' %>>Fruits and Vegetables</option>
+        </select>
+      </div>
+      <div class="col-md-2 col-sm-6">
+        <button type="submit" class="btn btn-primary w-100">Search</button>
+      </div>
+    </form>
+  <table class="table table-hover text-center" style="font-size: 1.2rem;">
+      <thead>
+          <tr>
+            <th class="col-name">Product Name</th>
+            <th class="col-img">Product Image</th>
+            <th class="col-qty">Quantity</th>
+            <th class="col-price">Price</th>
+            <th class="col-action">Action</th>
+          </tr>
+      </thead>
+      <tbody>
+        <% for(let i=0; i < products.length; i++) { %>
+          <tr>
+            <td class="col-name"><a href="/product/<%= products[i].id %>" class="text-decoration-none"> <%= products[i].productName %> </a></td>
+            <td class="col-img"><img src="images/<%= products[i].image %>" style="width:90px;height:auto;" alt="<%= products[i].productName %>"></td>
+            <td class="col-qty"><%= products[i].quantity %></td>
+            <td class="col-price">$<%= products[i].price.toFixed(2) %></td>
+            <td class="col-action buy-cell">
+              <form action="/add-to-cart/<%= products[i].id %>" method="POST">
+                <input type="number" name="quantity" class="form-control qty-input" min="1" max="<%= products[i].quantity %>" value="1" required>
+                <button type="submit" class="btn btn-primary btn-sm">Buy</button>
+              </form>
+            </td>
+          </tr>
+        <% } %>
+      </tbody>
+    </table>
+  </div>
+</body>
+</html>
