@@ -1,0 +1,66 @@
+<% /* Orders page: lists user orders and their items (joined from order_items) */ %>
+<%- include('partials/header', { user, pageTitle: 'Order History' }) %>
+<h2 class="mb-4">Your Orders</h2>
+<% if (!orders.length) { %>
+  <div class="alert alert-info">No orders yet. <a href="/shopping">Start shopping</a>.</div>
+<% } else { %>
+  <div class="list-group">
+  <% orders.forEach(o => { %>
+    <div class="list-group-item mb-3 shadow-sm rounded-md order-card" id="order-<%= o.id %>">
+      <div class="d-flex justify-content-between align-items-center flex-wrap">
+        <div>
+          <strong>Order #<%= o.id %></strong>
+          <div class="text-muted small">Placed: <%= new Date(o.created_at).toLocaleString() %></div>
+          <div class="small">Method: <%= o.delivery_method %> | Fee: $<%= Number(o.delivery_fee).toFixed(2) %></div>
+          <div class="fw-semibold">Total: $<%= Number(o.total).toFixed(2) %></div>
+        </div>
+      </div>
+      <div class="mt-2">
+        <a class="btn btn-secondary btn-sm" href="/orders/<%= o.id %>/invoice?auto=1">Print Invoice</a>
+      </div>
+      <hr/>
+      <table class="table table-sm">
+        <thead>
+          <tr><th>Product</th><th>Qty</th><th>Unit Price</th><th>Line Total</th></tr>
+        </thead>
+        <tbody>
+          <% (itemsByOrder[o.id] || []).forEach(it => { %>
+            <tr>
+              <td><%= it.productName %></td>
+              <td><%= it.quantity %></td>
+              <td>$<%= Number(it.price).toFixed(2) %></td>
+              <td>$<%= (Number(it.price) * it.quantity).toFixed(2) %></td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+  <% }) %>
+  </div>
+<% if (orders && orders.length) { 
+     let grand = 0; 
+     orders.forEach(o => { grand += Number(o.total) || 0; }); %>
+  <div class="mt-4 p-3 rounded-md" style="background:#ffffff; border:1px solid #e2e8f0; box-shadow:0 4px 12px -6px rgba(0,0,0,.05);">
+    <div class="d-flex justify-content-between align-items-center flex-wrap">
+      <strong class="fs-5">Grand Total</strong>
+      <span class="fw-semibold fs-5">$<%= grand.toFixed(2) %></span>
+    </div>
+    <div class="small text-muted mt-1">Sum of all order totals listed above.</div>
+  </div>
+<% } %>
+<% } %>
+<% if (messages && messages.length) { %>
+  <div class="alert alert-success mt-3">
+    <% messages.forEach(m => { %><div><%= m %></div><% }) %>
+  </div>
+<% } %>
+<% if (errors && errors.length) { %>
+  <div class="alert alert-danger mt-3">
+    <% errors.forEach(e => { %><div><%= e %></div><% }) %>
+  </div>
+<% } %>
+<%- include('partials/footer') %>
+<script>
+  // No JS needed; invoice page handles printing when opened with ?auto=1
+</script>
+<style></style>

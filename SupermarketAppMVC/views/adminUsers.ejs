@@ -1,0 +1,87 @@
+<% /*
+  Admin Users page
+  - Lists all users in a clean table
+  - Admin accounts are protected (no edit/delete)
+  - Provides quick links to edit user or view their order history
+*/ %>
+<%- include('partials/header', { pageTitle: 'Manage Users', user, messages, errors }) %>
+<section class="admin-form-wrapper">
+  <div class="admin-panel users-panel">
+    <div class="auth-header">
+  <h1 class="auth-title">Users</h1>
+  <p class="auth-sub">Manage accounts and view order history</p>
+    </div>
+    <% if (messages && messages.length) { %>
+      <div class="alert alert-success mb-3"><%= messages.join(', ') %></div>
+    <% } %>
+    <% if (errors && errors.length) { %>
+      <div class="alert alert-danger mb-3"><%= errors.join(', ') %></div>
+    <% } %>
+  <!-- Users table container (rounded, scrollable) -->
+  <div class="table-clean mb-4 users-table-wrapper">
+      <table class="table table-sm mb-0 users-table">
+        <thead>
+          <!-- Column headers: keep concise for small screens -->
+          <tr>
+            <th>ID</th>
+            <th>Username</th>
+            <th>Email</th>
+            <th>Role</th>
+            <th>Contact</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+        <% if (users && users.length) { %>
+          <% users.forEach(u => { %>
+            <!-- One table row per user -->
+            <tr class="user-row">
+              <td><%= u.id %></td>
+              <td><%= u.username %></td>
+              <td><%= u.email %></td>
+              <!-- Role badge: red for admin, gray for user -->
+              <td><span class="badge bg-<%= u.role === 'admin' ? 'danger' : 'secondary' %>"><%= u.role %></span></td>
+              <td><%= u.contact || '-' %></td>
+              <td>
+                <!-- Actions: admin users are protected (no buttons) -->
+                <div class="user-actions btn-group" role="group">
+                  <% if (u.role !== 'admin') { %>
+                    <!-- Edit profile (opens update form) -->
+                    <a href="/admin/users/<%= u.id %>/edit" class="btn btn-sm btn-outline-primary" title="Edit user">✏️ Edit</a>
+                    <!-- View order history (admin view) -->
+                    <a href="/admin/users/<%= u.id %>/orders" class="btn btn-sm btn-outline-secondary" title="View order history">🧾 Orders</a>
+                    <!-- Delete user (confirmation guard) -->
+                    <form action="/admin/users/<%= u.id %>/delete" method="POST" onsubmit="return confirm('Delete user <%= u.username %>?');" style="display:inline">
+                      <button class="btn btn-sm btn-outline-danger" type="submit" title="Delete user">🗑️ Delete</button>
+                    </form>
+                  <% } else { %>
+                    <span class="text-muted small">Protected admin</span>
+                  <% } %>
+                </div>
+              </td>
+            </tr>
+          <% }) %>
+        <% } else { %>
+          <tr><td colspan="6" class="text-center py-4">No users found.</td></tr>
+        <% } %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+<!-- Local styles specific to Manage Users page; keep lightweight and scoped -->
+<style>
+  .users-panel { max-width: 980px; margin: 0 auto; }
+  .users-table-wrapper { border-radius: 12px; overflow: auto; box-shadow: 0 8px 24px rgba(0,0,0,0.06); background: linear-gradient(180deg, rgba(255,255,255,0.85), rgba(255,255,255,0.9)); }
+  .auth-header { text-align: center; margin-bottom: 16px; }
+  .auth-title { font-size: 42px; font-weight: 800; letter-spacing: 0.3px; }
+  .auth-sub { color: #64748b; }
+  .table-clean thead tr { background: #f1f5f9; }
+  .table-clean td, .table-clean th { padding: 12px 16px; }
+  .user-actions .btn { min-width: 100px; border-radius: 12px; }
+  .badge.bg-danger { background-color: #ef4444 !important; }
+  .badge.bg-secondary { background-color: #64748b !important; }
+  /* Optional hover state for better affordance */
+  .users-table tbody tr.user-row:hover { background-color: #f9fbfd; }
+</style>
+<%- include('partials/footer') %>

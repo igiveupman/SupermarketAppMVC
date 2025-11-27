@@ -1,0 +1,41 @@
+<% /* Reusable product card partial. Expects locals: p (product), user, returnTo (optional), showFavorite (bool), clickable (bool) */ %>
+<div class="product-card <%= clickable ? 'clickable' : '' %>" <%= clickable ? ('data-link="/product/' + p.id + '"') : '' %>>
+  <div class="d-flex justify-content-between align-items-start mb-1">
+    <div class="product-meta"><%= (p.category === 'Produce' || p.category === 'Fruits and Vegetables') ? 'Fruits & Veg' : (p.category || 'Uncategorized') %></div>
+    <% if (showFavorite && user) { %>
+      <a href="/favorites/toggle/<%= p.id %>" class="favorite-toggle" title="Toggle favorite" onclick="event.stopPropagation()">
+        <span class="heart <%= p.favorited ? 'favorited' : '' %>">❤</span>
+      </a>
+    <% } %>
+  </div>
+  <a href="/product/<%= p.id %>" class="text-decoration-none" onclick="event.stopPropagation()"><h5><%= p.productName %></h5></a>
+  <img src="/images/<%= p.image %>" alt="<%= p.productName %>" onclick="event.stopPropagation()">
+  <div class="price-tag">
+    <% if (p.discount_price) { %>
+      <span class="price-discount">$<%= Number(p.discount_price).toFixed(2) %></span>
+      <span class="price-original ms-1">$<%= p.price.toFixed(2) %></span>
+    <% } else { %>
+      $<%= p.price.toFixed(2) %>
+    <% } %>
+  </div>
+  <div class="stock">
+    <% if (p.quantity > 0) { %>
+      Stock: <%= p.quantity %>
+    <% } else { %>
+      <span class="badge bg-danger">Sold Out</span>
+    <% } %>
+  </div>
+  <% if (user && user.role !== 'admin') { %>
+    <% if (p.quantity > 0) { %>
+      <form action="/add-to-cart/<%= p.id %>" method="POST" class="mt-auto" onclick="event.stopPropagation()">
+        <input type="hidden" name="returnTo" value="<%= returnTo || '/shopping' %>">
+        <div class="input-group mb-2">
+          <input type="number" name="quantity" class="form-control qty-input" data-max="<%= p.quantity %>" min="1" max="<%= p.quantity %>" value="1" required>
+        </div>
+        <button type="submit" class="btn btn-primary w-100">🛒 Add to Cart</button>
+      </form>
+    <% } else { %>
+      <button class="btn btn-secondary w-100 mt-auto" disabled>Not Available</button>
+    <% } %>
+  <% } %>
+</div>

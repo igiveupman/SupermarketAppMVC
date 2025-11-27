@@ -1,0 +1,36 @@
+<% /* Favorites page: shows products the user has favorited; supports add-to-cart */ %>
+<%- include('partials/header', { user, pageTitle: 'Favourites' }) %>
+<h2 class="fw-semibold mb-3">Your Favourites</h2>
+<% if (!products.length) { %>
+  <div class="alert alert-info">No favourites yet. Tap the heart on any product to add it here.</div>
+<% } %>
+<div class="products-grid">
+  <% products.forEach(p => { %>
+    <div class="product-card">
+      <div class="d-flex justify-content-between align-items-start mb-1">
+        <div class="product-meta"><%= (p.category === 'Produce' ? 'Fruits & Veg' : (p.category || 'Uncategorized')) %></div>
+        <a href="/favorites/toggle/<%= p.id %>" class="favorite-toggle" title="Remove from favourites">
+          <span class="heart favorited">❤</span>
+        </a>
+      </div>
+      <a href="/product/<%= p.id %>" class="text-decoration-none"><h5><%= p.productName %></h5></a>
+      <img src="/images/<%= p.image %>" alt="<%= p.productName %>" />
+      <div class="price-tag">$<%= p.price.toFixed(2) %></div>
+      <div class="stock">Stock: <%= p.quantity %></div>
+      <form action="/add-to-cart/<%= p.id %>" method="POST" class="mt-auto">
+        <input type="hidden" name="returnTo" value="/shopping">
+        <div class="input-group mb-2">
+          <input type="number" name="quantity" class="form-control qty-input" min="1" max="<%= p.quantity %>" value="1" required>
+        </div>
+        <button type="submit" class="btn btn-primary w-100">Add to Cart</button>
+      </form>
+    </div>
+  <% }) %>
+</div>
+<%- include('partials/footer') %>
+<style>
+.favorite-toggle { text-decoration:none; }
+.heart { font-size:1.2rem; color:#94a3b8; transition:.2s; }
+.heart.favorited { color:#e11d48; }
+.heart:hover { transform:scale(1.15); color:#e11d48; }
+</style>

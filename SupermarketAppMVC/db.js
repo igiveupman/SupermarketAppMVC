@@ -2,10 +2,12 @@ const mysql = require('mysql2');
 require('dotenv').config(); // Load variables from .env
 
 //Database connection details
+// Support both DB_PASSWORD and legacy DB_PASS naming
+const resolvedPassword = process.env.DB_PASSWORD || process.env.DB_PASS;
 const db = mysql.createConnection({
     host: process.env.DB_HOST,
     user: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
+    password: resolvedPassword,
     database: process.env.DB_NAME
 });
 

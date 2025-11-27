@@ -1,0 +1,50 @@
+<%- include('partials/header', { user, pageTitle: 'User Orders', messages: (typeof messages !== 'undefined' ? messages : []), errors: (typeof errors !== 'undefined' ? errors : []) }) %>
+<div class="container-wide">
+  <h2>User Orders: <%= subjectUser.username %> (<%= subjectUser.email %>)</h2>
+  <div class="mb-3">
+    <form action="/admin/users/<%= subjectUser.id %>/orders/clear" method="post" onsubmit="return confirm('Clear all orders for this user? This cannot be undone.');">
+      <button class="btn btn-danger">Clear Order History</button>
+      <a class="btn btn-secondary" href="/admin/users">Back to Users</a>
+    </form>
+  </div>
+
+  <% if (!orders.length) { %>
+    <div class="alert alert-info">No orders found for this user.</div>
+  <% } else { %>
+    <div class="list-group">
+      <% orders.forEach(o => { %>
+        <div class="list-group-item mb-3">
+          <div class="d-flex justify-content-between">
+            <div>
+              <strong>Order #<%= o.id %></strong> — <span class="text-muted"><%= new Date(o.created_at || o.createdAt).toLocaleString() %></span>
+            </div>
+            <div>
+              <a class="btn btn-sm btn-outline-primary" href="/orders/<%= o.id %>/invoice" target="_blank">View Invoice</a>
+            </div>
+          </div>
+          <table class="table table-sm mt-2">
+            <thead>
+              <tr>
+                <th>Item</th>
+                <th class="text-end">Qty</th>
+                <th class="text-end">Price</th>
+                <th class="text-end">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% (itemsByOrder[o.id] || []).forEach(it => { %>
+                <tr>
+                  <td><%= it.productName %></td>
+                  <td class="text-end"><%= it.quantity %></td>
+                  <td class="text-end">$<%= Number(it.price).toFixed(2) %></td>
+                  <td class="text-end">$<%= Number(it.price * it.quantity).toFixed(2) %></td>
+                </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        </div>
+      <% }) %>
+    </div>
+  <% } %>
+</div>
+<%- include('partials/footer') %>

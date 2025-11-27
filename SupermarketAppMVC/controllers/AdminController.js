@@ -14,6 +14,47 @@ module.exports = {
   }
   ,
 
+  // View a specific user's order history (admin)
+  userOrders(req, res) {
+    const admin = req.session.user;
+    if (!admin || admin.role !== 'admin') {
+      req.flash('error', 'Unauthorized');
+      return res.redirect('/');
+    }
+    const userId = parseInt(req.params.id, 10);
+    const User = require('../models/User');
+    const Order = require('../models/Order');
+    const db = require('../db');
+
+    User.getById(userId, (uErr, subjectUser) => {
+      if (uErr || !subjectUser) {
+        req.flash('error', 'User not found');
+        return res.redirect('/admin/users');
+      }
+      Order.listByUser(userId, (oErr, orders) => {
+        if (oErr) {
+          req.flash('error', 'Failed to load orders');
+          return res.render('adminUserOrders', { user: admin, subjectUser, orders: [], itemsByOrder: {}, messages: req.flash('success'), errors: req.flash('error') });
+        }
+        if (!orders.length) {
+          return res.render('adminUserOrders', { user: admin, subjectUser, orders: [], itemsByOrder: {}, messages: req.flash('success'), errors: req.flash('error') });
+        }
+        const ids = orders.map(o => o.id);
+        const sql = 'SELECT oi.order_id, oi.product_id, oi.quantity, oi.price, p.productName FROM order_items oi JOIN products p ON p.id = oi.product_id WHERE oi.order_id IN (?) ORDER BY oi.order_id';
+        db.query(sql, [ids], (iErr, rows) => {
+          const itemsByOrder = {};
+          if (!iErr && rows) {
+            rows.forEach(r => {
+              if (!itemsByOrder[r.order_id]) itemsByOrder[r.order_id] = [];
+              itemsByOrder[r.order_id].push(r);
+            });
+          }
+          res.render('adminUserOrders', { user: admin, subjectUser, orders, itemsByOrder, messages: req.flash('success'), errors: req.flash('error') });
+        });
+      });
+    });
+  },
+
   async undoLastCheckout(req, res) {
     const fs = require('fs');
     const path = require('path');

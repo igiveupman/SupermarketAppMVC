@@ -1,37 +1,101 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-  <title>Admin Dashboard</title>
-</head>
-<body>
-  <div class="container mt-4">
-    <h1>Admin Dashboard</h1>
-    <p>Welcome, <%= user.username %> (<%= user.role %>)</p>
-    <% if (errors && errors.length) { %>
-      <div class="alert alert-danger"><%= errors.join(', ') %></div>
-    <% } %>
-    <% if (messages && messages.length) { %>
-      <div class="alert alert-success"><%= messages.join(', ') %></div>
-    <% } %>
-
-    <h3>Products</h3>
-    <ul>
-      <% products.forEach(p => { %>
-        <li><a href="/admin/products/<%= p.id %>"><%= p.productName %></a></li>
-      <% }) %>
-    </ul>
-
-    <h3>Users</h3>
-    <ul>
-      <% users.forEach(u => { %>
-        <li><%= u.username %> - <%= u.role %></li>
-      <% }) %>
-    </ul>
-
-    <a href="/inventory" class="btn btn-secondary">Back to Inventory</a>
+<%- include('partials/header', { user, pageTitle: 'Admin Dashboard' }) %>
+<h1 class="mb-3 hero-title">Admin Dashboard</h1>
+<p class="muted mb-4">Welcome, <strong><%= user.username %></strong> <small>(<%= user.role %>)</small></p>
+<div class="action-widgets mb-4">
+  <a class="widget" href="/inventory" aria-label="Manage inventory">
+    <div class="widget-icon">📦</div>
+    <div class="widget-body">
+      <h4>Inventory</h4>
+      <p class="muted">View & edit stock.</p>
+    </div>
+    <div class="widget-action">→</div>
+  </a>
+  <a class="widget" href="/addProduct" aria-label="Add product">
+    <div class="widget-icon">➕</div>
+    <div class="widget-body">
+      <h4>Add Product</h4>
+      <p class="muted">Create new item.</p>
+    </div>
+    <div class="widget-action">→</div>
+  </a>
+  <a class="widget" href="/admin/users" aria-label="Manage users">
+    <div class="widget-icon">👥</div>
+    <div class="widget-body">
+      <h4>Users</h4>
+      <p class="muted">Roles & accounts.</p>
+    </div>
+    <div class="widget-action">→</div>
+  </a>
+  <a class="widget" href="/admin/users" aria-label="Manage orders">
+    <div class="widget-icon">🧾</div>
+    <div class="widget-body">
+      <h4>Manage Orders</h4>
+      <p class="muted">View & clear user history.</p>
+    </div>
+    <div class="widget-action">→</div>
+  </a>
+  <a class="widget" href="/logout" aria-label="Logout">
+    <div class="widget-icon">🚪</div>
+    <div class="widget-body">
+      <h4>Logout</h4>
+      <p class="muted">Sign out.</p>
+    </div>
+    <div class="widget-action">→</div>
+  </a>
+</div>
+<% if (errors && errors.length) { %>
+  <div class="alert alert-danger"><%= errors.join(', ') %></div>
+<% } %>
+<% if (messages && messages.length) { %>
+  <div class="alert alert-success"><%= messages.join(', ') %></div>
+<% } %>
+<div class="row g-4">
+  <div class="col-md-6">
+    <div class="card shadow-sm h-100">
+      <div class="card-header fw-semibold">Products (<%= products.length %>)</div>
+      <ul class="list-group list-group-flush">
+        <% products.forEach(p => { %>
+          <li class="list-group-item d-flex justify-content-between align-items-center">
+            <a href="/admin/products/<%= p.id %>" class="text-decoration-none"><%= p.productName %></a>
+            <span class="badge bg-secondary"><%= p.category || 'Uncategorized' %></span>
+          </li>
+        <% }) %>
+        <% if (products.length === 0) { %>
+          <li class="list-group-item">No products found.</li>
+        <% } %>
+      </ul>
+      <div class="card-footer text-end">
+        <a href="/addProduct" class="btn btn-primary btn-sm" aria-label="Add new product">Add Product</a>
+      </div>
+    </div>
   </div>
-</body>
-</html>
+  <div class="col-md-6">
+    <div class="card shadow-sm h-100">
+      <div class="card-header fw-semibold">Users (<%= users.length %>)</div>
+      <ul class="list-group list-group-flush">
+        <% users.forEach(u => { %>
+          <li class="list-group-item d-flex justify-content-between align-items-center flex-wrap">
+            <div class="d-flex align-items-center gap-2">
+              <span class="fw-semibold"><%= u.username %></span>
+              <span class="badge bg-dark"><%= u.role %></span>
+            </div>
+            <div class="d-flex align-items-center gap-2 mt-2 mt-md-0">
+              <a href="/admin/users/<%= u.id %>/edit" class="btn btn-sm btn-outline-primary" aria-label="Edit <%= u.username %>">Edit</a>
+              <a href="/admin/users/<%= u.id %>/orders" class="btn btn-sm btn-outline-secondary" aria-label="View orders for <%= u.username %>">Orders</a>
+              <form action="/admin/users/<%= u.id %>/delete" method="POST" style="display:inline" onsubmit="return confirm('Delete user <%= u.username %>? This action cannot be undone.');">
+                <button type="submit" class="btn btn-sm btn-outline-danger" aria-label="Delete <%= u.username %>">Delete</button>
+              </form>
+            </div>
+          </li>
+        <% }) %>
+        <% if (users.length === 0) { %>
+          <li class="list-group-item">No users found.</li>
+        <% } %>
+      </ul>
+      <div class="card-footer text-end">
+        <a href="/admin/users" class="btn btn-sm btn-secondary" aria-label="Go to full user management page">Manage Users</a>
+      </div>
+    </div>
+  </div>
+</div>
+<%- include('partials/footer') %>
