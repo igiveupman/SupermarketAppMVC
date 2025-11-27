@@ -1,3 +1,7 @@
+/**
+ * AdminController
+ * - Admin dashboard and maintenance actions (undo checkout, user order views)
+ */
 module.exports = {
   dashboard(req, res) {
     // Render a simple admin dashboard; reuse Product model to show counts

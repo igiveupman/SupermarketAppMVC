@@ -1,4 +1,8 @@
-// UserController: admin user management (list, edit, update, delete)
+/**
+ * UserController
+ * - Admin user management: list, view, edit, update, delete users
+ * - Protects admin user from destructive edits
+ */
 const User = require('../models/User');
 
 module.exports = {

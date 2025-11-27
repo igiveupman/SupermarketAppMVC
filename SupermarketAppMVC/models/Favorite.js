@@ -1,4 +1,7 @@
-// Favorite model: manages favorites table
+/**
+ * Favorite model
+ * - Manages favorites table and product joins per user
+ */
 const db = require('../db');
 
 const Favorite = {

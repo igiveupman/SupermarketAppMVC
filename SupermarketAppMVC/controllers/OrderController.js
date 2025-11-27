@@ -1,4 +1,8 @@
-// OrderController: shows order history and item details for current user
+/**
+ * OrderController
+ * - Shows order history and item details for the logged-in user
+ * - Renders printable invoices for individual orders
+ */
 const Order = require('../models/Order');
 const db = require('../db');
 
@@ -16,7 +20,7 @@ module.exports = {
       if (!orders.length) {
         return res.render('orders', { user, orders: [], itemsByOrder: {}, messages: req.flash('success'), errors: req.flash('error') });
       }
-  // Fetch items for these orders (joined with products for names)
+      // Fetch items for these orders (join with products to get names)
       const ids = orders.map(o => o.id);
       const sql = 'SELECT oi.order_id, oi.product_id, oi.quantity, oi.price, p.productName FROM order_items oi JOIN products p ON p.id = oi.product_id WHERE oi.order_id IN (?) ORDER BY oi.order_id';
       db.query(sql, [ids], (iErr, rows) => {
@@ -44,7 +48,7 @@ module.exports = {
       const sql = 'SELECT oi.product_id, oi.quantity, oi.price, p.productName FROM order_items oi JOIN products p ON p.id = oi.product_id WHERE oi.order_id = ?';
       db.query(sql, [orderId], (iErr, items) => {
         if (iErr) return res.status(500).send('Server error');
-        // Calculate totals
+        // Calculate totals (subtotal + 8% GST)
         const subtotal = items.reduce((s, it) => s + (it.price * it.quantity), 0);
         const taxRate = 0.08; // 8% sample GST
         const tax = +(subtotal * taxRate).toFixed(2);

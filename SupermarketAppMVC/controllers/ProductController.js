@@ -1,4 +1,8 @@
-// ProductController: lists products for shopping and handles admin product CRUD
+/**
+ * ProductController
+ * - Lists products for shopping with filters, favorites and pagination
+ * - Admin CRUD: create, update, delete products
+ */
 const Product = require('../models/Product');
 const Favorite = require('../models/Favorite');
 
@@ -26,6 +30,7 @@ module.exports = {
           // Build a lookup of favorited product IDs for quick marking in view
           const favIds = new Set(favs.map(f => f.id || f.product_id));
           products = products.map(p => ({ ...p, favorited: favIds.has(p.id) }));
+      // Admin inventory: compute sold-out notice then render inventory view
       if (req.session.user.role === 'admin') {
             // gather sold-out products to notify admin
             // Admin: compute sold-out notice and render inventory view
@@ -76,6 +81,7 @@ module.exports = {
 
   // Product details page
   show(req, res) {
+    // Fetch a single product and optionally mark favorited state for logged-in users
     Product.getById(req.params.id, (err, product) => {
       if (err) return res.status(500).send(err);
       if (!product) return res.status(404).send('Not found');
@@ -95,6 +101,7 @@ module.exports = {
 
   // Admin: render create product form
   createForm(req, res) {
+    // Simple form render; validation handled in store()
     res.render('addProduct', { user: req.session.user, messages: req.flash('success'), errors: req.flash('error') });
   },
 
@@ -127,6 +134,7 @@ module.exports = {
 
   // Admin: render edit form populated with product
   editForm(req, res) {
+    // Load product then pass to template for editing
     Product.getById(req.params.id, (err, product) => {
       if (err) return res.status(500).send(err);
       if (!product) return res.status(404).send('Not found');
@@ -137,6 +145,7 @@ module.exports = {
   // expects multer to populate req.file if a new image was uploaded
   // Admin: update product details (handles optional new image)
   update(req, res) {
+    // Construct update payload from form fields
     const product = {
       productName: req.body.name || req.body.productName,
       price: parseFloat(req.body.price) || 0,
@@ -160,6 +169,7 @@ module.exports = {
 
   // Admin: delete product by id
   destroy(req, res) {
+    // Hard delete; consider soft delete in future if audit trail needed
     Product.delete(req.params.id, (err) => {
       if (err) return res.status(500).send(err);
       res.redirect('/inventory');

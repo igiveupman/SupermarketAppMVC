@@ -1,4 +1,7 @@
-// User model: SQL helpers for users table
+/**
+ * User model
+ * - SQL helpers for users table (CRUD, list/get)
+ */
 const db = require('../db');
 
 // User model — `users` table fields: id, username, email, password, address, contact, role, free_delivery (optional).

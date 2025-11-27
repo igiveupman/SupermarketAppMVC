@@ -1,3 +1,7 @@
+/**
+ * Product model
+ * - Encapsulates SQL for CRUD and filtered listing
+ */
 // Product model: SQL accessors for products table
 const db = require('../db');
 

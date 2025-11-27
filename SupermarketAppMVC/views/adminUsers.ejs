@@ -11,12 +11,7 @@
   <h1 class="auth-title">Users</h1>
   <p class="auth-sub">Manage accounts and view order history</p>
     </div>
-    <% if (messages && messages.length) { %>
-      <div class="alert alert-success mb-3"><%= messages.join(', ') %></div>
-    <% } %>
-    <% if (errors && errors.length) { %>
-      <div class="alert alert-danger mb-3"><%= errors.join(', ') %></div>
-    <% } %>
+  <% /* Flash messages are rendered by the header include; avoid duplicating here. */ %>
   <!-- Users table container (rounded, scrollable) -->
   <div class="table-clean mb-4 users-table-wrapper">
       <table class="table table-sm mb-0 users-table">

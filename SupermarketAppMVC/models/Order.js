@@ -1,4 +1,8 @@
-// Order model: creates orders and lists/clears them; optionally stores order_items
+/**
+ * Order model
+ * - Creates orders and optionally persists order_items
+ * - Lists, fetches, and clears orders (optionally per-user)
+ */
 const db = require('../db');
 
 const Order = {

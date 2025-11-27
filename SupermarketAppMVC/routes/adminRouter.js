@@ -1,3 +1,7 @@
+/**
+ * Admin router
+ * - Maps admin URLs to controller actions (dashboard, users, orders, products)
+ */
 const express = require('express');
 const router = express.Router();
 
