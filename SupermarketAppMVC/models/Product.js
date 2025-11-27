@@ -79,10 +79,51 @@ const Product = {
 
   // Delete product by id
   delete(id, callback) {
-    const sql = 'DELETE FROM products WHERE id = ?';
-    db.query(sql, [id], (err, result) => {
+    // Some DBs/tables (e.g. order_items) may reference products via FK without ON DELETE CASCADE.
+    // Try to remove dependent rows first; ignore if the table doesn't exist.
+    const tryDeleteOrderItems = (next) => {
+      const sql = 'DELETE FROM order_items WHERE product_id = ?';
+      db.query(sql, [id], (err) => {
+        if (err) {
+          // Ignore missing table/column errors to remain backward compatible
+          const ignorable = ['ER_NO_SUCH_TABLE', 'ER_BAD_TABLE_ERROR', 'ER_BAD_FIELD_ERROR'];
+          if (!ignorable.includes(err.code)) {
+            return next(err);
+          }
+        }
+        next();
+      });
+    };
+
+    const tryDeleteFavorites = (next) => {
+      // favorites generally has ON DELETE CASCADE, but handle legacy schema gracefully
+      const sql = 'DELETE FROM favorites WHERE product_id = ?';
+      db.query(sql, [id], (err) => {
+        if (err) {
+          const ignorable = ['ER_NO_SUCH_TABLE', 'ER_BAD_TABLE_ERROR', 'ER_BAD_FIELD_ERROR'];
+          if (!ignorable.includes(err.code)) {
+            return next(err);
+          }
+        }
+        next();
+      });
+    };
+
+    const deleteProduct = () => {
+      const sql = 'DELETE FROM products WHERE id = ?';
+      db.query(sql, [id], (err, result) => {
+        if (err) return callback(err);
+        callback(null, { affectedRows: result.affectedRows });
+      });
+    };
+
+    // Execute sequence: order_items -> favorites -> product
+    tryDeleteOrderItems((err) => {
       if (err) return callback(err);
-      callback(null, { affectedRows: result.affectedRows });
+      tryDeleteFavorites((err2) => {
+        if (err2) return callback(err2);
+        deleteProduct();
+      });
     });
   },
 

@@ -27,9 +27,15 @@
         </div>
 
         <div class="mb-3">
-          <label for="discount_price" class="form-label">Discount Price (optional)</label>
-          <input type="number" class="form-control" id="discount_price" name="discount_price" min="0" step="0.01" value="<%= product.discount_price ? Number(product.discount_price).toFixed(2) : '' %>" placeholder="e.g. 39.90">
-          <small class="text-muted">Blank = no discount.</small>
+          <label for="discount_percent" class="form-label">Discount (%) (optional)</label>
+          <% 
+            const dPrice = product.discount_price ? Number(product.discount_price) : null; 
+            const fullPrice = Number(product.price);
+            const dPercent = (dPrice !== null && fullPrice > 0) ? ((1 - (dPrice / fullPrice)) * 100) : '';
+          %>
+          <input type="number" class="form-control" id="discount_percent" name="discount_percent" min="0" max="100" step="0.01" value="<%= dPercent !== '' ? dPercent.toFixed(2) : '' %>" placeholder="e.g. 15">
+          <small class="text-muted">Enter the percentage off the original price. Leave blank for no discount.</small>
+          <div class="small text-muted mt-1" id="discountPreviewUpdate" style="display:none;"></div>
         </div>
 
         <div class="mb-3">
@@ -62,4 +68,27 @@
       <p class="text-center">No product found.</p>
     <% } %>
   </div>
+<script>
+  (function(){
+    const priceEl = document.getElementById('price');
+    const pctEl = document.getElementById('discount_percent');
+    const out = document.getElementById('discountPreviewUpdate');
+    if(!priceEl || !pctEl || !out) return;
+    function render(){
+      const p = parseFloat(priceEl.value);
+      const d = parseFloat(pctEl.value);
+      if(isFinite(p) && isFinite(d)){
+        const final = Math.max(0, p * (1 - Math.min(100, Math.max(0,d))/100));
+        out.style.display='';
+        out.innerText = `Final price after ${d.toFixed(2)}%: $${final.toFixed(2)} (was $${p.toFixed(2)})`;
+      } else {
+        out.style.display='none';
+        out.innerText='';
+      }
+    }
+    priceEl.addEventListener('input', render);
+    pctEl.addEventListener('input', render);
+    render();
+  })();
+</script>
 <%- include('partials/footer') %>

@@ -109,10 +109,20 @@ module.exports = {
   // Admin: save new product (image comes from Multer in req.file)
   store(req, res) {
     // Normalize and validate inputs
+    // Calculate discount from percentage if provided; keep legacy discount_price for compatibility
+    const priceNum = parseFloat(req.body.price) || 0;
+    let discountPrice = null;
+    if (req.body.discount_percent !== undefined && req.body.discount_percent !== '') {
+      const pct = Math.max(0, Math.min(100, parseFloat(req.body.discount_percent)));
+      discountPrice = Number((priceNum * (1 - pct / 100)).toFixed(2));
+    } else if (req.body.discount_price) {
+      discountPrice = parseFloat(req.body.discount_price);
+    }
+
     const product = {
       productName: (req.body.name || req.body.productName || '').trim(),
-      price: parseFloat(req.body.price) || 0,
-      discount_price: req.body.discount_price ? parseFloat(req.body.discount_price) : null,
+      price: priceNum,
+      discount_price: isNaN(discountPrice) ? null : discountPrice,
       quantity: parseInt(req.body.quantity, 10) || 0,
       image: req.file ? req.file.filename : (req.body.currentImage || null),
       category: req.body.category || null
@@ -146,10 +156,19 @@ module.exports = {
   // Admin: update product details (handles optional new image)
   update(req, res) {
     // Construct update payload from form fields
+    const updPriceNum = parseFloat(req.body.price) || 0;
+    let updDiscountPrice = null;
+    if (req.body.discount_percent !== undefined && req.body.discount_percent !== '') {
+      const pct = Math.max(0, Math.min(100, parseFloat(req.body.discount_percent)));
+      updDiscountPrice = Number((updPriceNum * (1 - pct / 100)).toFixed(2));
+    } else if (req.body.discount_price) {
+      updDiscountPrice = parseFloat(req.body.discount_price);
+    }
+
     const product = {
       productName: req.body.name || req.body.productName,
-      price: parseFloat(req.body.price) || 0,
-      discount_price: req.body.discount_price ? parseFloat(req.body.discount_price) : null,
+      price: updPriceNum,
+      discount_price: isNaN(updDiscountPrice) ? null : updDiscountPrice,
       quantity: parseInt(req.body.quantity, 10) || 0,
       image: req.file ? req.file.filename : (req.body.currentImage || null),
       category: req.body.category || null
@@ -170,9 +189,18 @@ module.exports = {
   // Admin: delete product by id
   destroy(req, res) {
     // Hard delete; consider soft delete in future if audit trail needed
-    Product.delete(req.params.id, (err) => {
-      if (err) return res.status(500).send(err);
-      res.redirect('/inventory');
+    const id = req.params.id;
+    Product.getById(id, (gErr, product) => {
+      const name = (!gErr && product && product.productName) ? product.productName : `Product #${id}`;
+      Product.delete(id, (err) => {
+        if (err) {
+          console.error('Failed to delete product', id, err);
+          req.flash('error', `Product cannot be deleted right now. (${name})`);
+        } else {
+          req.flash('success', `Deleted: ${name}`);
+        }
+        return res.redirect('/inventory');
+      });
     });
   }
 };

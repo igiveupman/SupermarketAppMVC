@@ -71,11 +71,16 @@
           <td style="width:120px"><img src="/images/<%= prod.image %>" alt="<%= prod.productName %>" class="img-fluid rounded" /></td>
           <td><%= prod.quantity %></td>
           <td>
-            <% if (prod.discount_price) { %>
-              <span class="price-discount">$<%= Number(prod.discount_price).toFixed(2) %></span>
-              <span class="price-original ms-1">$<%= prod.price.toFixed(2) %></span>
+            <% 
+              const p = Number(prod.price);
+              const d = (prod.discount_price !== null && typeof prod.discount_price !== 'undefined') ? Number(prod.discount_price) : null;
+              const hasDiscount = (d !== null && !isNaN(d) && d < p);
+            %>
+            <% if (hasDiscount) { %>
+              <span class="price-discount">$<%= d.toFixed(2) %></span>
+              <span class="price-original ms-1">$<%= p.toFixed(2) %></span>
             <% } else { %>
-              $<%= prod.price.toFixed(2) %>
+              $<%= p.toFixed(2) %>
             <% } %>
           </td>
           <td><span class="badge bg-secondary"><%= (['Produce','Fruits & Vegs','Fruits and Vegetables','Fruits & Vegetables'].includes(prod.category) ? 'Fruits & Vegs' : (prod.category || 'Uncategorized')) %></span></td>

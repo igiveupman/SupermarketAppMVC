@@ -25,9 +25,10 @@
         <label for="price">Price ($)</label>
       </div>
       <div class="form-floating mb-3">
-        <input type="number" class="form-control" id="discount_price" name="discount_price" placeholder="Discount Price" min="0" step="0.01">
-        <label for="discount_price">Discount Price (optional)</label>
+        <input type="number" class="form-control" id="discount_percent" name="discount_percent" placeholder="Discount (%)" min="0" max="100" step="0.01">
+        <label for="discount_percent">Discount (%) (optional)</label>
       </div>
+  <div class="mb-3 small text-muted" id="discountPreviewAdd" style="display:none;"></div>
       <div class="mb-3">
         <label for="category" class="form-label">Category</label>
         <select id="category" name="category" class="form-select admin-select" required>
@@ -46,4 +47,27 @@
     </form>
   </div>
 </section>
+<script>
+  (function(){
+    const price = document.getElementById('price');
+    const pct = document.getElementById('discount_percent');
+    const out = document.getElementById('discountPreviewAdd');
+    if(!price || !pct || !out) return;
+    function render(){
+      const p = parseFloat(price.value);
+      const d = parseFloat(pct.value);
+      if(isFinite(p) && isFinite(d)){
+        const final = Math.max(0, p * (1 - Math.min(100, Math.max(0,d))/100));
+        out.style.display = '';
+        out.innerText = `Final price after ${d.toFixed(2)}%: $${final.toFixed(2)} (was $${p.toFixed(2)})`;
+      } else {
+        out.style.display = 'none';
+        out.innerText = '';
+      }
+    }
+    price.addEventListener('input', render);
+    pct.addEventListener('input', render);
+    render();
+  })();
+</script>
 <%- include('partials/footer') %>
