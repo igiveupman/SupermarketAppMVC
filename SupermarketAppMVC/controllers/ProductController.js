@@ -188,19 +188,12 @@ module.exports = {
 
   // Admin: delete product by id
   destroy(req, res) {
-    // Hard delete; consider soft delete in future if audit trail needed
+    // Business rule: prevent deletion and inform the admin
     const id = req.params.id;
     Product.getById(id, (gErr, product) => {
       const name = (!gErr && product && product.productName) ? product.productName : `Product #${id}`;
-      Product.delete(id, (err) => {
-        if (err) {
-          console.error('Failed to delete product', id, err);
-          req.flash('error', `Product cannot be deleted right now. (${name})`);
-        } else {
-          req.flash('success', `Deleted: ${name}`);
-        }
-        return res.redirect('/inventory');
-      });
+      req.flash('error', `Product cannot be deleted as it is important. (${name})`);
+      return res.redirect('/inventory');
     });
   }
 };
