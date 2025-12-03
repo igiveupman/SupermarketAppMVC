@@ -16,5 +16,3 @@ app.use('/', mvcApp);
 // Start HTTP server
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
-// Root launcher to start SupermarketAppMVC without changing directory
-require('./SupermarketAppMVC/app.js');
