@@ -1,4 +1,4 @@
-<%- include('partials/header', { user, pageTitle: 'Inventory' }) %>
+<%- include('partials/header', { user, pageTitle: 'Inventory', currentPage: 'inventory' }) %>
 <% // Fallbacks so view doesn't crash if controller didn't provide filter vars %>
 <% const invSearch = (typeof search !== 'undefined') ? search : ''; %>
 <% const invCategory = (typeof category !== 'undefined') ? category : ''; %>
@@ -6,7 +6,7 @@
 <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
   <h2 class="mb-0">Inventory
     <span class="featured-badge ms-2" title="Featured products">
-      <span class="star">★</span>
+      <span class="star">&#11088;</span>
       <span class="count"><%= typeof featuredCount !== 'undefined' ? featuredCount : 0 %></span>
     </span>
   </h2>
@@ -65,7 +65,7 @@
           <td class="text-start">
             <a href="/product/<%= prod.id %>" class="text-decoration-none"><%= prod.productName %></a>
             <% if (prod.featured) { %>
-              <span class="ms-1 feature-star" title="Featured">★</span>
+              <span class="ms-1 feature-star" title="Featured">&#11088;</span>
             <% } %>
           </td>
           <td style="width:120px"><img src="/images/<%= prod.image %>" alt="<%= prod.productName %>" class="img-fluid rounded" /></td>
@@ -90,7 +90,10 @@
               <button type="submit" class="btn btn-outline btn-sm ms-1"><%= prod.featured ? 'Unfeature' : 'Feature' %></button>
             </form>
           </td>
-          <td><a href="/deleteProduct/<%= prod.id %>" class="btn btn-delete btn-sm" onclick="return confirm('Delete product?')">Delete</a></td>
+          <td>
+            <a href="/deleteProduct/<%= prod.id %>" class="btn btn-delete btn-sm"
+               onclick="alert('Product cannot be deleted'); return false;">Delete</a>
+          </td>
         </tr>
       <% }) %>
       <% if (products.length === 0) { %>

@@ -8,20 +8,22 @@ const db = require('../db');
 // Product model aligned with the rest of the app which uses `productName` as the
 // column for the product's name (and `id`, `price`, `quantity`, `image`, ...).
 const Product = {
-  // List products with optional search and category filters
+  // List products with optional search and category filters (non-paginated)
   getAllFiltered({ search, category, featured }, callback) {
-    let sql = 'SELECT id, productName, price, discount_price, image, quantity, category, featured FROM products WHERE 1=1';
+    this.listFilteredPaged({ search, category, featured }, callback);
+  },
+
+  // Count products with filters applied
+  countFiltered({ search, category, featured }, callback) {
+    let sql = 'SELECT COUNT(*) as cnt FROM products WHERE 1=1';
     const params = [];
     if (search) {
       sql += ' AND productName LIKE ?';
       params.push('%' + search + '%');
     }
     if (category) {
-      // Treat multiple UI labels as produce; match any variant stored in DB
       if (['Produce','Fruits & Vegs','Fruits and Vegetables','Fruits & Vegetables'].includes(category)) {
-        sql += ' AND ((category IN ("Produce","Fruits & Vegs","Fruits and Vegetables","Fruits & Vegetables"))'
-              + ' OR (category IS NULL AND productName IN ("Apples","Bananas","Tomatoes","Broccoli")))';
-        // no params needed for variant list
+        sql += ' AND ((category IN ("Produce","Fruits & Vegs","Fruits and Vegetables","Fruits & Vegetables")) OR (category IS NULL AND productName IN ("Apples","Bananas","Tomatoes","Broccoli")))';
       } else {
         sql += ' AND category = ?';
         params.push(category);
@@ -30,7 +32,46 @@ const Product = {
     if (featured) {
       sql += ' AND featured = 1';
     }
+    db.query(sql, params, (err, rows) => {
+      if (err) return callback(err);
+      const total = rows && rows[0] ? rows[0].cnt : 0;
+      callback(null, total);
+    });
+  },
+
+  // List products with filters, pagination, and sorting
+  listFilteredPaged({ search, category, featured, limit, offset, sortBy, sortDir }, callback) {
+    let sql = 'SELECT id, productName, price, discount_price, image, quantity, category, featured FROM products WHERE 1=1';
+    const params = [];
+    if (search) {
+      sql += ' AND productName LIKE ?';
+      params.push('%' + search + '%');
+    }
+    if (category) {
+      if (['Produce','Fruits & Vegs','Fruits and Vegetables','Fruits & Vegetables'].includes(category)) {
+        sql += ' AND ((category IN ("Produce","Fruits & Vegs","Fruits and Vegetables","Fruits & Vegetables")) OR (category IS NULL AND productName IN ("Apples","Bananas","Tomatoes","Broccoli")))';
+      } else {
+        sql += ' AND category = ?';
+        params.push(category);
+      }
+    }
+    if (featured) {
+      sql += ' AND featured = 1';
+    }
+    const safeSortBy = ['price','productName','featured','id'].includes(sortBy) ? sortBy : 'id';
+    const safeSortDir = sortDir && sortDir.toLowerCase() === 'asc' ? 'ASC' : 'DESC';
+    sql += ` ORDER BY ${safeSortBy} ${safeSortDir}`;
+    if (typeof limit === 'number' && typeof offset === 'number') {
+      sql += ' LIMIT ? OFFSET ?';
+      params.push(limit, offset);
+    }
     db.query(sql, params, (err, results) => callback(err, results));
+  },
+
+  // Featured subset (optionally limited)
+  getFeatured({ search, category, limit }, callback) {
+    const limitVal = typeof limit === 'number' ? limit : 6;
+    this.listFilteredPaged({ search, category, featured: true, limit: limitVal, offset: 0, sortBy: 'id', sortDir: 'DESC' }, callback);
   },
 
   // Fetch single product by id

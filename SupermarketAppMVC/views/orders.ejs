@@ -1,5 +1,5 @@
 <% /* Orders page: lists user orders and their items (joined from order_items) */ %>
-<%- include('partials/header', { user, pageTitle: 'Order History' }) %>
+<%- include('partials/header', { user, pageTitle: 'Order History', currentPage: 'orders' }) %>
 <h2 class="mb-4">Your Orders</h2>
 <% if (!orders.length) { %>
   <div class="alert alert-info">No orders yet. <a href="/shopping">Start shopping</a>.</div>

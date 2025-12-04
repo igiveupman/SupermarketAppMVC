@@ -1,94 +1,88 @@
-<% /* Home page: shows hero and quick action widgets for logged-in users */ %>
-<%- include('partials/header', { user, pageTitle: 'Home' }) %>
+<% /* Home page: FairPrice-inspired hero and quick actions */ %>
+<%- include('partials/header', { user, pageTitle: 'Home', currentPage: 'home' }) %>
 <header class="hero">
   <img src="/images/logo.png" alt="UnfairPrice logo" class="hero-logo" />
-  <h1 class="hero-title">UnfairPrice<br><span class="hero-tagline-inline">Your fresh groceries, delivered with care.</span></h1>
+  <div class="hero-title-block">
+    <h1 class="hero-title">UnfairPrice</h1>
+    <p class="hero-tagline">A FairPrice-inspired way to shop: blue, red, and ready with fresh daily picks.</p>
+  </div>
   <div class="hero-actions">
     <% if (user) { %>
       <% if (user.role === 'admin') { %>
         <div class="action-widgets">
           <a class="widget" href="/inventory" aria-label="Manage inventory">
-            <div class="widget-icon">📦</div>
+            <div class="widget-icon">&#128230;</div>
             <div class="widget-body">
               <h4>Inventory</h4>
-              <p class="muted">View & edit stock.</p>
+              <p class="muted">View and edit stock.</p>
             </div>
-            
           </a>
           <a class="widget" href="/addProduct" aria-label="Add product">
-            <div class="widget-icon">➕</div>
+            <div class="widget-icon">&#10133;</div>
             <div class="widget-body">
               <h4>Add Product</h4>
-              <p class="muted">Create new item.</p>
+              <p class="muted">Create new items fast.</p>
             </div>
-            
           </a>
           <a class="widget" href="/admin/users" aria-label="Manage users">
-            <div class="widget-icon">👥</div>
+            <div class="widget-icon">&#128101;</div>
             <div class="widget-body">
               <h4>Users</h4>
-              <p class="muted">Accounts & roles.</p>
+              <p class="muted">Accounts and roles.</p>
             </div>
-           
           </a>
         </div>
       <% } else { %>
         <div class="action-widgets">
           <a class="widget" href="/shopping" aria-label="Start shopping">
-            <div class="widget-icon">🛒</div>
+            <div class="widget-icon">&#127828;</div>
             <div class="widget-body">
               <h4>Shop</h4>
-              <p class="muted">Browse products.</p>
+              <p class="muted">Browse our aisles.</p>
             </div>
-            
           </a>
 
           <a class="widget" href="/cart" aria-label="View cart">
-            <div class="widget-icon">🧾</div>
+            <div class="widget-icon">&#128722;</div>
             <div class="widget-body">
               <h4>Cart</h4>
-              <p class="muted">Review & checkout.</p>
+              <p class="muted">Review and checkout.</p>
             </div>
-            
           </a>
 
           <a class="widget" href="/orders" aria-label="Order history">
-            <div class="widget-icon">📦</div>
+            <div class="widget-icon">&#128179;</div>
             <div class="widget-body">
               <h4>Orders</h4>
               <p class="muted">Past purchases.</p>
             </div>
-            
           </a>
 
           <a class="widget" href="/favorites" aria-label="Favorites">
-            <div class="widget-icon">❤️</div>
+            <div class="widget-icon">&#10084;&#65039;</div>
             <div class="widget-body">
               <h4>Favorites</h4>
-              <p class="muted">Saved items.</p>
+              <p class="muted">Save go-to picks.</p>
             </div>
-           
           </a>
         </div>
       <% } %>
     <% } else { %>
       <div class="action-widgets">
         <a class="widget" href="/register" aria-label="Create account">
-        
+          <div class="widget-icon">&#128100;</div>
           <div class="widget-body">
             <h4>Register</h4>
-            <p class="muted">Join & start shopping.</p>
+            <p class="muted">Join and start shopping.</p>
           </div>
-          
         </a>
 
         <a class="widget" href="/login" aria-label="Sign in">
-        
-            <div class="widget-body">
-              <h4>Sign In</h4>
-              <p class="muted">Access your account.</p>
-            </div>
-          
+          <div class="widget-icon">&#128275;</div>
+          <div class="widget-body">
+            <h4>Sign In</h4>
+            <p class="muted">Access your account.</p>
+          </div>
         </a>
       </div>
     <% } %>
@@ -97,24 +91,24 @@
 <% if (!user || user.role !== 'admin') { %>
 <section class="features">
   <div class="feature">
-    <span class="feature-icon">🥬</span>
+    <span class="feature-icon">&#127817;</span>
     <h3>Fresh Produce</h3>
     <p>Hand-picked fruits and vegetables sourced daily for peak freshness and flavor.</p>
   </div>
   <div class="feature">
-    <span class="feature-icon">⚡</span>
+    <span class="feature-icon">&#9889;</span>
     <h3>Quick Checkout</h3>
     <p>Streamlined cart and secure payment process to get you on your way faster.</p>
   </div>
   <div class="feature">
-    <span class="feature-icon">❤️</span>
+    <span class="feature-icon">&#10084;&#65039;</span>
     <h3>Favorites</h3>
     <p>Save the items you love and access them instantly next time you shop.</p>
   </div>
   <div class="feature">
-    <span class="feature-icon">🔥</span>
+    <span class="feature-icon">&#11088;</span>
     <h3>Trending Picks</h3>
-    <p>See what’s hot right now with featured products.</p>
+    <p>See what's hot right now with featured products.</p>
   </div>
 </section>
 <% } %>

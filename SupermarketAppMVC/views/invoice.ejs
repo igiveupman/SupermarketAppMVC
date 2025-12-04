@@ -1,4 +1,4 @@
-<%- include('partials/header', { user, pageTitle: 'Invoice #' + order.id, messages: (typeof messages !== 'undefined' ? messages : []), errors: (typeof errors !== 'undefined' ? errors : []) }) %>
+<%- include('partials/header', { user, pageTitle: 'Invoice #' + order.id, currentPage: 'orders', messages: (typeof messages !== 'undefined' ? messages : []), errors: (typeof errors !== 'undefined' ? errors : []) }) %>
 
 <style>
   .invoice { max-width: 980px; margin: 0 auto; padding: 24px 16px; }
@@ -41,7 +41,7 @@
       </div>
     </div>
     <div class="actions">
-      <button class="btn btn-print" onclick="window.print()">🖨️ Print</button>
+      <button class="btn btn-print" onclick="window.print()">&#128424; Print</button>
     </div>
   </header>
 
@@ -93,7 +93,7 @@
   </section>
 
   <footer class="invoice-footer">
-    <a class="back-link" href="/orders">← Back to Orders</a>
+    <a class="back-link" href="/orders">&larr; Back to Orders</a>
     <div class="muted">Thank you for shopping with UnFairPrice.</div>
   </footer>
 </div>

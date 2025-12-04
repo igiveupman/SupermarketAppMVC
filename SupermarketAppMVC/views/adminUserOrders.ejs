@@ -1,4 +1,4 @@
-<%- include('partials/header', { user, pageTitle: 'User Orders', messages: (typeof messages !== 'undefined' ? messages : []), errors: (typeof errors !== 'undefined' ? errors : []) }) %>
+<%- include('partials/header', { user, pageTitle: 'User Orders', currentPage: 'adminUsers', messages: (typeof messages !== 'undefined' ? messages : []), errors: (typeof errors !== 'undefined' ? errors : []) }) %>
 <div class="container-wide">
   <h2>User Orders: <%= subjectUser.username %> (<%= subjectUser.email %>)</h2>
   <div class="mb-3">
@@ -16,7 +16,7 @@
         <div class="list-group-item mb-3">
           <div class="d-flex justify-content-between">
             <div>
-              <strong>Order #<%= o.id %></strong> — <span class="text-muted"><%= new Date(o.created_at || o.createdAt).toLocaleString() %></span>
+              <strong>Order #<%= o.id %></strong> - <span class="text-muted"><%= new Date(o.created_at || o.createdAt).toLocaleString() %></span>
             </div>
             <div>
               <a class="btn btn-sm btn-outline-primary" href="/orders/<%= o.id %>/invoice" target="_blank">View Invoice</a>

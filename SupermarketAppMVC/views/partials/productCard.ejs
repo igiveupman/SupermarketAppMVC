@@ -4,7 +4,7 @@
     <div class="product-meta"><%= (p.category === 'Produce' || p.category === 'Fruits and Vegetables') ? 'Fruits & Veg' : (p.category || 'Uncategorized') %></div>
     <% if (showFavorite && user) { %>
       <a href="/favorites/toggle/<%= p.id %>" class="favorite-toggle" title="Toggle favorite" onclick="event.stopPropagation()">
-        <span class="heart <%= p.favorited ? 'favorited' : '' %>">❤</span>
+        <span class="heart <%= p.favorited ? 'favorited' : '' %>"><%- p.favorited ? '&#10084;' : '&#9825;' %></span>
       </a>
     <% } %>
   </div>
@@ -32,7 +32,7 @@
         <div class="input-group mb-2">
           <input type="number" name="quantity" class="form-control qty-input" data-max="<%= p.quantity %>" min="1" max="<%= p.quantity %>" value="1" required>
         </div>
-        <button type="submit" class="btn btn-primary w-100">🛒 Add to Cart</button>
+        <button type="submit" class="btn btn-primary w-100">&#128722; Add to Cart</button>
       </form>
     <% } else { %>
       <button class="btn btn-secondary w-100 mt-auto" disabled>Not Available</button>

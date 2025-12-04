@@ -19,65 +19,77 @@ module.exports = {
       category = 'Produce';
     }
     // 'Meats' passes through directly; no mapping needed
-  // Fetch products from DB based on filters
-  Product.getAllFiltered({ search, category, featured: featuredOnly }, (err, products) => {
+  const sortBy = req.query.sortBy || 'id';
+  const sortDir = req.query.sortDir || 'desc';
+  const pageSize = 10;
+  let page = parseInt(req.query.page || '1', 10);
+  if (isNaN(page) || page < 1) page = 1;
+
+  const commonFilters = { search, category, featured: featuredOnly };
+  Product.countFiltered(commonFilters, (countErr, totalCount) => {
+    if (countErr) return res.status(500).send(countErr);
+    const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
+    if (page > totalPages) page = totalPages;
+    const offset = (page - 1) * pageSize;
+    Product.listFilteredPaged({ ...commonFilters, limit: pageSize, offset, sortBy, sortDir }, (err, products) => {
       if (err) return res.status(500).send(err);
-      // If user logged in, fetch favorites to mark hearts
-      if (req.session.user) {
-        Favorite.list(req.session.user.id, (favErr, favs) => {
-          if (favErr) return res.status(500).send(favErr);
-          // Favorite.list selects product columns aliased as p.id etc. Ensure we reference the product id correctly.
-          // Build a lookup of favorited product IDs for quick marking in view
-          const favIds = new Set(favs.map(f => f.id || f.product_id));
-          products = products.map(p => ({ ...p, favorited: favIds.has(p.id) }));
-      // Admin inventory: compute sold-out notice then render inventory view
-      if (req.session.user.role === 'admin') {
-            // gather sold-out products to notify admin
-            // Admin: compute sold-out notice and render inventory view
-            Product.getSoldOut((soErr, soldOut) => {
-              let errors = req.flash('error') || [];
-              if (!soErr && soldOut.length) {
-                const names = soldOut.map(p => p.productName).join(', ');
-                const msg = 'Sold out: ' + names + '. Please restock.';
-                // Only add if not already present
-                if (!errors.includes(msg)) {
-                  errors.push(msg);
-                }
-              }
-              const featuredCount = products.filter(p => p.featured).length;
-        return res.render('inventory', { products, featuredCount, user: req.session.user, messages: req.flash('success') || [], errors, search, category, featuredOnly });
-            });
-            return; // prevent further rendering
-          }
-          // Featured products subset used for trending module (avoid shadowing outer featuredOnly flag)
-          const featuredProducts = products.filter(p => p.featured);
-          // If trending mode active: show only featured in main list; hide separate trending section
-          const trendingProducts = trendingMode ? [] : featuredProducts;
-          if (trendingMode) {
-            products = featuredProducts;
-          }
-          // Pagination
-          // Simple in-memory pagination after filtering
-          const pageSize = 10;
-          let page = parseInt(req.query.page || '1', 10);
-          const totalPages = Math.max(1, Math.ceil(products.length / pageSize));
-          if (page < 1) page = 1; if (page > totalPages) page = totalPages;
-          const start = (page - 1) * pageSize;
-          const pagedProducts = products.slice(start, start + pageSize);
-          return res.render('shopping', { products: pagedProducts, trendingProducts, user: req.session.user, currentPage: 'shopping', page, totalPages, search, category, trendingMode, messages: req.flash('success') || [], errors: req.flash('error') || [] });
+      const renderWithFavorites = (prods, trendingProducts) => {
+        if (req.session.user) {
+          Favorite.list(req.session.user.id, (favErr, favs) => {
+            if (favErr) return res.status(500).send(favErr);
+            const favIds = new Set(favs.map(f => f.id || f.product_id));
+            prods = prods.map(p => ({ ...p, favorited: favIds.has(p.id) }));
+            trendingProducts = trendingProducts.map(p => ({ ...p, favorited: favIds.has(p.id) }));
+            return finishRender(prods, trendingProducts);
+          });
+        } else {
+          finishRender(prods, trendingProducts);
+        }
+      };
+
+      const finishRender = (prods, trendingProducts) => {
+        if (req.session.user && req.session.user.role === 'admin') {
+          Product.getSoldOut((soErr, soldOut) => {
+            let errors = req.flash('error') || [];
+            if (!soErr && soldOut.length) {
+              const names = soldOut.map(p => p.productName).join(', ');
+              const msg = 'Sold out: ' + names + '. Please restock.';
+              if (!errors.includes(msg)) errors.push(msg);
+            }
+            const featuredCount = prods.filter(p => p.featured).length;
+            return res.render('inventory', { products: prods, featuredCount, user: req.session.user, messages: req.flash('success') || [], errors, search, category, featuredOnly });
+          });
+          return;
+        }
+
+        return res.render('shopping', {
+          products: prods,
+          trendingProducts: trendingMode ? [] : trendingProducts,
+          user: req.session.user,
+          currentPage: 'shopping',
+          page,
+          totalPages,
+          search,
+          category,
+          trendingMode,
+          messages: req.flash('success') || [],
+          errors: req.flash('error') || []
         });
+      };
+
+      // Fetch featured subset for trending section (respect filters)
+      if (trendingMode) {
+        // main list already featured-only via featuredOnly flag when toggled
+        return renderWithFavorites(products, []);
       } else {
-        // Not logged in (though route protected) fallback
-        const pageSize = 10;
-        let page = parseInt(req.query.page || '1', 10);
-        const totalPages = Math.max(1, Math.ceil(products.length / pageSize));
-        if (page < 1) page = 1; if (page > totalPages) page = totalPages;
-        const start = (page - 1) * pageSize;
-        const pagedProducts = products.slice(start, start + pageSize);
-  return res.render('shopping', { products: pagedProducts, trendingProducts: [], user: null, currentPage: 'shopping', page, totalPages, search, category, trendingMode, messages: req.flash('success') || [], errors: req.flash('error') || [] });
+        Product.getFeatured({ search, category, limit: 6 }, (featErr, featuredRows) => {
+          if (featErr) return res.status(500).send(featErr);
+          renderWithFavorites(products, featuredRows || []);
+        });
       }
     });
-  },
+  });
+},
 
   // Product details page
   show(req, res) {

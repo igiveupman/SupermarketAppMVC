@@ -22,6 +22,36 @@
         .then(data => {
           if (!data.success){ throw new Error(data.error || 'Failed'); }
           updateCartBadge(data.cartCount);
+          // Update stock display and input max in the card
+          try {
+            var card = form.closest('.product-card');
+            if (card && typeof data.remaining === 'number') {
+              var stockEl = card.querySelector('.stock');
+              if (stockEl) {
+                if (data.remaining > 0) {
+                  stockEl.textContent = 'Stock: ' + data.remaining;
+                } else {
+                  stockEl.innerHTML = '<span class="badge bg-danger">Sold Out</span>';
+                }
+              }
+              var qtyInput = card.querySelector('.qty-input');
+              var addBtn = form.querySelector('button[type="submit"]');
+              if (qtyInput) {
+                qtyInput.setAttribute('data-max', data.remaining);
+                qtyInput.setAttribute('max', data.remaining);
+                if (data.remaining === 0) {
+                  qtyInput.value = 0;
+                  qtyInput.disabled = true;
+                } else if (parseInt(qtyInput.value,10) > data.remaining) {
+                  qtyInput.value = data.remaining;
+                }
+              }
+              if (addBtn && data.remaining === 0) {
+                addBtn.disabled = true;
+                addBtn.textContent = 'Not Available';
+              }
+            }
+          } catch (_) {}
           // feedback toast
           var msg = document.createElement('div');
           msg.className = 'ajax-toast';

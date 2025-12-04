@@ -594,5 +594,44 @@
       }
     ],
     "userId": 5
+  },
+  {
+    "timestamp": 1764225288864,
+    "items": [
+      {
+        "productId": 1,
+        "productName": "Apples",
+        "price": 1.2,
+        "originalPrice": 1.5,
+        "discountApplied": true,
+        "quantity": 3,
+        "image": "apples.png"
+      }
+    ],
+    "userId": 8
+  },
+  {
+    "timestamp": 1764229327683,
+    "items": [
+      {
+        "productId": 2,
+        "productName": "Bananas",
+        "price": 0.8,
+        "originalPrice": 0.8,
+        "discountApplied": false,
+        "quantity": 1,
+        "image": "bananas.png"
+      },
+      {
+        "productId": 21,
+        "productName": "Chicken Breast",
+        "price": 4,
+        "originalPrice": 4,
+        "discountApplied": false,
+        "quantity": 1,
+        "image": "chicken breast.jpg"
+      }
+    ],
+    "userId": 5
   }
 ]

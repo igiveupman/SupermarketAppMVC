@@ -4,7 +4,7 @@
   - Admin accounts are protected (no edit/delete)
   - Provides quick links to edit user or view their order history
 */ %>
-<%- include('partials/header', { pageTitle: 'Manage Users', user, messages, errors }) %>
+<%- include('partials/header', { pageTitle: 'Manage Users', user, currentPage: 'adminUsers', messages, errors }) %>
 <section class="admin-form-wrapper">
   <div class="admin-panel users-panel">
     <div class="auth-header">
@@ -42,12 +42,12 @@
                 <div class="user-actions btn-group" role="group">
                   <% if (u.role !== 'admin') { %>
                     <!-- Edit profile (opens update form) -->
-                    <a href="/admin/users/<%= u.id %>/edit" class="btn btn-sm btn-outline-primary" title="Edit user">✏️ Edit</a>
+                    <a href="/admin/users/<%= u.id %>/edit" class="btn btn-sm btn-outline-primary" title="Edit user">&#9998; Edit</a>
                     <!-- View order history (admin view) -->
-                    <a href="/admin/users/<%= u.id %>/orders" class="btn btn-sm btn-outline-secondary" title="View order history">🧾 Orders</a>
+                    <a href="/admin/users/<%= u.id %>/orders" class="btn btn-sm btn-outline-secondary" title="View order history">&#128722; Orders</a>
                     <!-- Delete user (confirmation guard) -->
                     <form action="/admin/users/<%= u.id %>/delete" method="POST" onsubmit="return confirm('Delete user <%= u.username %>?');" style="display:inline">
-                      <button class="btn btn-sm btn-outline-danger" type="submit" title="Delete user">🗑️ Delete</button>
+                      <button class="btn btn-sm btn-outline-danger" type="submit" title="Delete user">&#128465; Delete</button>
                     </form>
                   <% } else { %>
                     <span class="text-muted small">Protected admin</span>

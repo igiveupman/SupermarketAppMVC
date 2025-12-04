@@ -1,46 +1,46 @@
-<%- include('partials/header', { user, pageTitle: 'Admin Dashboard' }) %>
+<%- include('partials/header', { user, pageTitle: 'Admin Dashboard', currentPage: 'inventory' }) %>
 <h1 class="mb-3 hero-title">Admin Dashboard</h1>
 <p class="muted mb-4">Welcome, <strong><%= user.username %></strong> <small>(<%= user.role %>)</small></p>
 <div class="action-widgets mb-4">
   <a class="widget" href="/inventory" aria-label="Manage inventory">
-    <div class="widget-icon">📦</div>
+    <div class="widget-icon">&#128230;</div>
     <div class="widget-body">
       <h4>Inventory</h4>
-      <p class="muted">View & edit stock.</p>
+      <p class="muted">View and edit stock.</p>
     </div>
-    <div class="widget-action">→</div>
+    <div class="widget-action">&rarr;</div>
   </a>
   <a class="widget" href="/addProduct" aria-label="Add product">
-    <div class="widget-icon">➕</div>
+    <div class="widget-icon">&#10133;</div>
     <div class="widget-body">
       <h4>Add Product</h4>
-      <p class="muted">Create new item.</p>
+      <p class="muted">Create new items.</p>
     </div>
-    <div class="widget-action">→</div>
+    <div class="widget-action">&rarr;</div>
   </a>
   <a class="widget" href="/admin/users" aria-label="Manage users">
-    <div class="widget-icon">👥</div>
+    <div class="widget-icon">&#128101;</div>
     <div class="widget-body">
       <h4>Users</h4>
-      <p class="muted">Roles & accounts.</p>
+      <p class="muted">Roles and accounts.</p>
     </div>
-    <div class="widget-action">→</div>
+    <div class="widget-action">&rarr;</div>
   </a>
   <a class="widget" href="/admin/users" aria-label="Manage orders">
-    <div class="widget-icon">🧾</div>
+    <div class="widget-icon">&#128179;</div>
     <div class="widget-body">
       <h4>Manage Orders</h4>
-      <p class="muted">View & clear user history.</p>
+      <p class="muted">View and clear history.</p>
     </div>
-    <div class="widget-action">→</div>
+    <div class="widget-action">&rarr;</div>
   </a>
   <a class="widget" href="/logout" aria-label="Logout">
-    <div class="widget-icon">🚪</div>
+    <div class="widget-icon">&#128682;</div>
     <div class="widget-body">
       <h4>Logout</h4>
-      <p class="muted">Sign out.</p>
+      <p class="muted">Sign out securely.</p>
     </div>
-    <div class="widget-action">→</div>
+    <div class="widget-action">&rarr;</div>
   </a>
 </div>
 <% if (errors && errors.length) { %>

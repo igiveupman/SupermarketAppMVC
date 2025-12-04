@@ -55,7 +55,20 @@ module.exports = {
         req.flash('error', 'Admin account is protected and cannot be modified.');
         return res.redirect('/admin/users');
       }
-      User.update(req.params.id, req.body, (err) => {
+      const payload = {
+        username: req.body.username,
+        email: req.body.email,
+        address: req.body.address,
+        contact: req.body.contact,
+        role: req.body.role,
+        free_delivery: req.body.free_delivery ? 1 : 0,
+        password: (req.body.new_password || '').trim() || null
+      };
+      if (payload.password && payload.password.length < 4) {
+        req.flash('error', 'Password must be at least 4 characters.');
+        return res.redirect('/admin/users/' + req.params.id + '/edit');
+      }
+      User.update(req.params.id, payload, (err) => {
         if (err) { req.flash('error', 'Failed to update user'); return res.redirect('/admin/users'); }
         req.flash('success', 'User updated');
         res.redirect('/admin/users');

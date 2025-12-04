@@ -42,6 +42,22 @@ connection.query('ALTER TABLE products ADD COLUMN discount_price DECIMAL(10,2) N
         console.error('Failed to ensure discount_price column:', dErr.code);
     }
 });
+// Ensure cart_items table exists for persistent carts
+connection.query(
+    'CREATE TABLE IF NOT EXISTS cart_items (' +
+    'id INT AUTO_INCREMENT PRIMARY KEY,' +
+    'user_id INT NOT NULL,' +
+    'product_id INT NOT NULL,' +
+    'quantity INT NOT NULL DEFAULT 0,' +
+    'updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,' +
+    'UNIQUE KEY uq_user_product (user_id, product_id)' +
+    ')',
+    (cErr) => {
+        if (cErr) {
+            console.error('Failed to ensure cart_items table:', cErr.code || cErr);
+        }
+    }
+);
 
 // View engine: EJS templates in /views
 // Set up view engine
@@ -62,12 +78,18 @@ app.use(express.json());
 
 // Session middleware: stores user + cart data in server-side session
 //TO DO: Insert code for Session Middleware below 
+const isProd = process.env.NODE_ENV === 'production';
 app.use(session({
-    secret: 'secret',
+    secret: process.env.SESSION_SECRET || 'secret',
     resave: false,
-    saveUninitialized: true,
+    saveUninitialized: false,
     // Session expires after 1 week of inactivity
-    cookie: { maxAge: 1000 * 60 * 60 * 24 * 7 } 
+    cookie: { 
+        maxAge: 1000 * 60 * 60 * 24 * 7,
+        httpOnly: true,
+        sameSite: 'lax',
+        secure: isProd
+    } 
 }));
 
 // Flash messages: short-lived success/error notifications between redirects
@@ -95,6 +117,25 @@ const OrderController = require('./controllers/OrderController');
 // Lazy-load puppeteer for PDF generation
 let puppeteer;
 const AuthController = require('./controllers/AuthController');
+// Simple in-memory rate limiter for login
+const loginAttempts = new Map();
+function loginRateLimit(req, res, next) {
+    const ip = req.ip || req.connection.remoteAddress || 'unknown';
+    const now = Date.now();
+    const windowMs = 15 * 60 * 1000;
+    const maxAttempts = 10;
+    const entry = loginAttempts.get(ip) || { count: 0, ts: now };
+    if (now - entry.ts > windowMs) {
+        entry.count = 0;
+        entry.ts = now;
+    }
+    entry.count += 1;
+    loginAttempts.set(ip, entry);
+    if (entry.count > maxAttempts) {
+        return res.status(429).send('Too many login attempts. Please try again later.');
+    }
+    next();
+}
 
 // Home page: shows landing or quick links; passes session user + flash messages
 app.get('/',  (req, res) => {
@@ -129,7 +170,7 @@ app.post('/register', validateRegistration, (req, res) => {
 
 // Auth routes: login form, login submit, logout
 app.get('/login', AuthController.loginForm);
-app.post('/login', AuthController.login);
+app.post('/login', loginRateLimit, AuthController.login);
 app.get('/logout', AuthController.logout);
 // Shopping: product listing with filters/pagination
 app.get('/shopping', checkAuthenticated, ProductController.index);
@@ -138,42 +179,7 @@ app.get('/shopping', checkAuthenticated, ProductController.index);
 app.post('/add-to-cart/:id', checkAuthenticated, CartController.addToCart);
 // AJAX endpoint: add to cart and return JSON (used by public/js/cartAjax.js)
 // JSON API endpoint for adding to cart without page reload
-app.post('/api/cart/add/:id', checkAuthenticated, (req, res) => {
-    const CartController = require('./controllers/CartController');
-    // Reuse existing logic but adapt response
-    const productId = parseInt(req.params.id, 10);
-    const quantity = parseInt(req.body.quantity, 10) || 1;
-    const Product = require('./models/Product');
-    Product.getById(productId, (err, product) => {
-        if (err) return res.status(500).json({ success:false, error:'Server error' });
-        if (!product) return res.status(404).json({ success:false, error:'Not found' });
-        const available = Number(product.quantity) || 0;
-        if (quantity > available) {
-            return res.status(400).json({ success:false, error:'Not enough stock. Available: ' + available });
-        }
-        if (!req.session.cart) req.session.cart = [];
-        const existing = req.session.cart.find(i=> i.productId === productId);
-        if (existing) {
-            const newQtyTotal = existing.quantity + quantity;
-            if (newQtyTotal > available) {
-                return res.status(400).json({ success:false, error:'Not enough stock. Current in cart: ' + existing.quantity + ', available: ' + available });
-            }
-            existing.quantity = newQtyTotal;
-        } else {
-            req.session.cart.push({
-                productId: product.id,
-                productName: product.productName,
-                price: product.discount_price ? parseFloat(product.discount_price) : parseFloat(product.price),
-                originalPrice: parseFloat(product.price),
-                discountApplied: !!product.discount_price,
-                quantity: quantity,
-                image: product.image
-            });
-        }
-        const cartCount = req.session.cart.reduce((sum,i)=> sum + i.quantity, 0);
-        res.json({ success:true, message: quantity + ' ' + product.productName + (quantity>1?'s':'') + ' added to cart.', cartCount });
-    });
-});
+app.post('/api/cart/add/:id', checkAuthenticated, CartController.apiAddToCart);
 
 // Cart pages: view, remove item, checkout, and API checkout
 app.get('/cart', checkAuthenticated, CartController.viewCart);

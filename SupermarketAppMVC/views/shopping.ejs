@@ -2,18 +2,19 @@
 <%- include('partials/header', { user, pageTitle: 'Shop', currentPage: 'shopping' }) %>
 <% const __trendingMode = (typeof trendingMode !== 'undefined') ? trendingMode : false; %>
 <div class="mb-2">Welcome, <strong><%= user.username %></strong> <small class="text-muted">(<%= user.role %>)</small></div>
-<h2 class="fw-semibold">Products</h2>
+<h2 class="fw-semibold">Fresh Picks</h2>
+<p class="muted">Browse a FairPrice-inspired catalogue with clean blues and bold reds.</p>
 <% if (__trendingMode) { %>
   <h5 class="mt-1 text-primary">Showing trending (featured) products only.</h5>
 <% } %>
 <% /* Category widgets (chips). Clicking active one again clears its filter. */ %>
 <div class="action-widgets mb-3 category-widgets">
   <% const categories = [
-    { key: '', label: 'All', icon: '🧺' },
-    { key: 'Bakery', label: 'Bakery', icon: '🥖' },
-    { key: 'Dairy', label: 'Dairy', icon: '🥛' },
-    { key: 'Produce', label: 'Fruits & Veg', icon: '🥬' },
-    { key: 'Meats', label: 'Meats', icon: '🍗' }
+    { key: '', label: 'All', icon: '&#128722;' },
+    { key: 'Bakery', label: 'Bakery', icon: '&#127838;' },
+    { key: 'Dairy', label: 'Dairy', icon: '&#129371;' },
+    { key: 'Produce', label: 'Fruits & Veg', icon: '&#127817;' },
+    { key: 'Meats', label: 'Meats', icon: '&#127830;' }
   ]; %>
   <% const buildQuery = (params) => {
        const parts = [];
@@ -24,14 +25,14 @@
      }; %>
   <!-- Trending widget: toggles featured-only mode -->
   <a class="widget <%= __trendingMode ? 'active' : '' %>" href="/shopping<%= __trendingMode ? buildQuery({ search, category }) : buildQuery({ trending: true, search, category }) %>" aria-label="Toggle trending products">
-    <div class="widget-icon">🔥</div>
+    <div class="widget-icon">&#11088;</div>
     <div class="widget-body">
       <h4>Trending</h4>
     </div>
   </a>
   <% categories.forEach(c => { %>
   <a class="widget <%= (category === c.key || (!category && c.key === '')) ? 'active' : '' %>" href="/shopping<%= (category === c.key) ? buildQuery({ search, trending: __trendingMode }) : buildQuery({ category: c.key, search, trending: __trendingMode }) %>" aria-label="Filter by <%= c.label %>">
-      <div class="widget-icon"><%= c.icon %></div>
+      <div class="widget-icon"><%- c.icon %></div>
       <div class="widget-body">
         <h4><%= c.label %></h4>
       </div>
@@ -66,7 +67,7 @@
 <div class="products-grid">
   <% if (!__trendingMode && typeof trendingProducts !== 'undefined' && trendingProducts.length) { %>
     <div style="grid-column:1/-1">
-      <h3 class="mt-4 mb-2">🔥 Trending Products</h3>
+      <h3 class="mt-4 mb-2">&#11088; Trending Products</h3>
       <div class="products-grid trending-grid">
         <% trendingProducts.forEach(tp => { %>
           <%- include('partials/productCard', { p: tp, user, showFavorite: true, clickable: true, returnTo: '/shopping' }) %>
@@ -86,7 +87,7 @@
   <nav class="mt-4">
     <ul class="pagination">
       <li class="page-item <%= page === 1 ? 'disabled' : '' %>">
-  <a class="page-link" href="/shopping?page=<%= page - 1 %><%= search ? '&search=' + encodeURIComponent(search) : '' %><%= category ? '&category=' + encodeURIComponent(category) : '' %><%= __trendingMode ? '&trending=1' : '' %>" tabindex="-1">Previous</a>
+        <a class="page-link" href="/shopping?page=<%= page - 1 %><%= search ? '&search=' + encodeURIComponent(search) : '' %><%= category ? '&category=' + encodeURIComponent(category) : '' %><%= __trendingMode ? '&trending=1' : '' %>" tabindex="-1">Previous</a>
       </li>
       <% for (let i=1;i<= totalPages;i++){ %>
         <li class="page-item <%= page === i ? 'active' : '' %>">
@@ -94,7 +95,7 @@
         </li>
       <% } %>
       <li class="page-item <%= page === totalPages ? 'disabled' : '' %>">
-  <a class="page-link" href="/shopping?page=<%= page + 1 %><%= search ? '&search=' + encodeURIComponent(search) : '' %><%= category ? '&category=' + encodeURIComponent(category) : '' %><%= __trendingMode ? '&trending=1' : '' %>">Next</a>
+        <a class="page-link" href="/shopping?page=<%= page + 1 %><%= search ? '&search=' + encodeURIComponent(search) : '' %><%= category ? '&category=' + encodeURIComponent(category) : '' %><%= __trendingMode ? '&trending=1' : '' %>">Next</a>
       </li>
     </ul>
     <p class="text-muted small mt-2">Page <%= page %> of <%= totalPages %></p>
@@ -158,13 +159,13 @@
 </script>
 <style>
 .favorite-toggle { text-decoration:none; }
-.heart { font-size:1.2rem; color:#94a3b8; transition:.2s; }
+.heart { font-size:1.2rem; color:#cbd5e1; transition:.2s; }
 .heart.favorited { color:#e11d48; }
 .heart:hover { transform:scale(1.15); color:#e11d48; }
-.pagination .page-link { color:#2563eb; }
-.pagination .page-item.active .page-link { background:#2563eb; border-color:#2563eb; }
+.pagination .page-link { color:var(--color-primary); }
+.pagination .page-item.active .page-link { background:var(--color-primary); border-color:var(--color-primary); }
 .product-card.clickable { cursor:pointer; position:relative; }
-.product-card.clickable:hover { box-shadow:0 0 0 2px #2563eb33; }
- .qty-error { margin-top:4px; }
- .is-invalid { border-color:#dc2626; }
+.product-card.clickable:hover { box-shadow:0 0 0 2px #004b9b26; }
+.qty-error { margin-top:4px; }
+.is-invalid { border-color:#dc2626; }
 </style>

@@ -8,28 +8,30 @@
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <link rel="stylesheet" href="/css/styles.css" />
   <script defer src="/js/lighting.js"></script>
+  <script defer src="/js/nav.js"></script>
 </head>
-<body class="theme-fairprice"><!-- Custom FairPrice-inspired navigation replaces Bootstrap navbar -->
+<body class="theme-fairprice">
+<% const __page = typeof currentPage !== 'undefined' ? currentPage : ''; %>
 <% /* Main site navigation (FairPrice-inspired) */ %>
-<nav class="main-nav shadow-sm">
+<nav class="main-nav shadow-sm" data-nav>
   <div class="nav-inner container-wide">
     <a href="/" class="nav-brand">
       <img src="/images/logo.png" alt="UnfairPrice logo" class="nav-logo" />
       <span class="brand-text">UnfairPrice</span>
     </a>
-    <button class="nav-toggle" aria-label="Toggle navigation">☰</button>
+    <button class="nav-toggle" aria-label="Toggle navigation" data-nav-toggle aria-expanded="false">&#9776;</button>
   <% /* Primary nav links differ for admin vs user */ %>
   <ul class="nav-links">
       <% if (user) { %>
         <% if (user.role === 'admin') { %>
-          <li><a class="nav-link" href="/inventory"><span class="nav-icon">📦</span>Inventory</a></li>
-          <li><a class="nav-link" href="/addProduct"><span class="nav-icon">➕</span>Add Product</a></li>
-          <li><a class="nav-link" href="/admin/users"><span class="nav-icon">👥</span>Manage Users</a></li>
+          <li><a class="nav-link <%= __page === 'inventory' ? 'active' : '' %>" href="/inventory"><span class="nav-icon">&#128230;</span>Inventory</a></li>
+          <li><a class="nav-link <%= __page === 'addProduct' ? 'active' : '' %>" href="/addProduct"><span class="nav-icon">&#10133;</span>Add Product</a></li>
+          <li><a class="nav-link <%= __page === 'adminUsers' ? 'active' : '' %>" href="/admin/users"><span class="nav-icon">&#128101;</span>Manage Users</a></li>
         <% } else { %>
-          <li><a class="nav-link" href="/shopping"><span class="nav-icon">🛍️</span>Shop</a></li>
-          <li><a class="nav-link" href="/cart"><span class="nav-icon">🛒</span>Cart <span class="cart-badge" data-cart-count><%= typeof cartCount !== 'undefined' ? cartCount : ((typeof cart !== 'undefined' && cart && cart.length) ? cart.reduce((s,i)=> s + i.quantity,0) : 0) %></span></a></li>
-          <li><a class="nav-link" href="/favorites"><span class="nav-icon">❤️</span>Favourites</a></li>
-          <li><a class="nav-link" href="/orders"><span class="nav-icon">📜</span>Orders</a></li>
+          <li><a class="nav-link <%= __page === 'shopping' ? 'active' : '' %>" href="/shopping"><span class="nav-icon">&#127828;</span>Shop</a></li>
+          <li><a class="nav-link <%= __page === 'cart' ? 'active' : '' %>" href="/cart"><span class="nav-icon">&#128722;</span>Cart <span class="cart-badge" data-cart-count><%= typeof cartCount !== 'undefined' ? cartCount : ((typeof cart !== 'undefined' && cart && cart.length) ? cart.reduce((s,i)=> s + i.quantity,0) : 0) %></span></a></li>
+          <li><a class="nav-link <%= __page === 'favorites' ? 'active' : '' %>" href="/favorites"><span class="nav-icon">&#10084;&#65039;</span>Favourites</a></li>
+          <li><a class="nav-link <%= __page === 'orders' ? 'active' : '' %>" href="/orders"><span class="nav-icon">&#128179;</span>Orders</a></li>
         <% } %>
       <% } %>
     </ul>

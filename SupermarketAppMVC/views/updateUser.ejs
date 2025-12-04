@@ -1,4 +1,4 @@
-<%- include('partials/header', { pageTitle: 'Edit User', user, messages, errors }) %>
+<%- include('partials/header', { pageTitle: 'Edit User', user, currentPage: 'adminUsers', messages, errors }) %>
 <section class="admin-form-wrapper">
   <div class="admin-panel">
     <div class="auth-header">
@@ -27,6 +27,10 @@
       <div class="form-floating mb-3">
         <input type="text" class="form-control" id="contact" name="contact" placeholder="Contact" value="<%= editUser.contact || '' %>">
         <label for="contact">Contact</label>
+      </div>
+      <div class="form-floating mb-3">
+        <input type="password" class="form-control" id="new_password" name="new_password" placeholder="New Password (leave blank to keep current)">
+        <label for="new_password">New Password (optional)</label>
       </div>
       <div class="mb-3">
         <label for="role" class="form-label">Role</label>

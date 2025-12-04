@@ -31,8 +31,15 @@ const User = {
 
   // Update user details
   update(id, user, callback) {
-    const sql = 'UPDATE users SET username=?, email=?, address=?, contact=?, role=?, free_delivery=? WHERE id = ?';
-    db.query(sql, [user.username, user.email, user.address || null, user.contact || null, user.role || 'user', user.free_delivery ? 1 : 0, id], (err, result) => {
+    const fields = ['username = ?', 'email = ?', 'address = ?', 'contact = ?', 'role = ?', 'free_delivery = ?'];
+    const params = [user.username, user.email, user.address || null, user.contact || null, user.role || 'user', user.free_delivery ? 1 : 0];
+    if (user.password && user.password.trim() !== '') {
+      fields.push('password = SHA1(?)');
+      params.push(user.password.trim());
+    }
+    const sql = `UPDATE users SET ${fields.join(', ')} WHERE id = ?`;
+    params.push(id);
+    db.query(sql, params, (err, result) => {
       if (err) return callback(err);
       callback(null, { changedRows: result.changedRows, affectedRows: result.affectedRows });
     });
