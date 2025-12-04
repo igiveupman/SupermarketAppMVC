@@ -9,13 +9,30 @@
     <% } %>
   </div>
   <a href="/product/<%= p.id %>" class="text-decoration-none" onclick="event.stopPropagation()"><h5><%= p.productName %></h5></a>
+  <% if (typeof p.averageRating !== 'undefined') {
+    const avg = p.averageRating ? Number(p.averageRating).toFixed(1) : null;
+    const avgNum = avg ? Number(avg) : 0;
+    const fullStars = avg ? Math.floor(avgNum) : 0;
+    const halfStar = avg ? (avgNum - fullStars) >= 0.5 : false;
+    const emptyStars = 5 - fullStars - (halfStar ? 1 : 0);
+  %>
+    <div class="d-flex align-items-center gap-1 mb-1 rating-row">
+      <% if (avg) { %><span class="avg-score"><%= avg %></span><% } %>
+      <div class="star-row">
+        <% for (let i = 0; i < fullStars; i++) { %><span class="star full">&#9733;</span><% } %>
+        <% if (halfStar) { %><span class="star half">&#9733;</span><% } %>
+        <% for (let i = 0; i < emptyStars; i++) { %><span class="star empty">&#9733;</span><% } %>
+      </div>
+      <small class="text-muted"><%= (p.reviewCount || 0) %></small>
+    </div>
+  <% } %>
   <img src="/images/<%= p.image %>" alt="<%= p.productName %>" onclick="event.stopPropagation()">
   <div class="price-tag">
     <% if (p.discount_price) { %>
       <span class="price-discount">$<%= Number(p.discount_price).toFixed(2) %></span>
-      <span class="price-original ms-1">$<%= p.price.toFixed(2) %></span>
+      <span class="price-original ms-1">$<%= Number(p.price).toFixed(2) %></span>
     <% } else { %>
-      $<%= p.price.toFixed(2) %>
+      $<%= Number(p.price).toFixed(2) %>
     <% } %>
   </div>
   <div class="stock">
@@ -39,3 +56,20 @@
     <% } %>
   <% } %>
 </div>
+<style>
+  .product-card img { object-fit: cover; width: 100%; max-height: 180px; border-radius: 8px; margin: 0.25rem 0 0.5rem; }
+  .product-meta { font-size: .75rem; text-transform: uppercase; letter-spacing: .6px; color: #6b7280; }
+  .favorite-toggle { text-decoration: none; color: #cbd5e1; transition: .2s; }
+  .favorite-toggle .heart.favorited { color: #e11d48; }
+  .price-discount { color: #16a34a; font-weight: 700; }
+  .price-original { text-decoration: line-through; color: #6b7280; }
+  .stock { font-size: .9rem; color: #4b5563; margin-bottom: .75rem; }
+  .qty-input { max-width: 100%; }
+  .product-card.clickable { cursor: pointer; }
+  .rating-row .avg-score { font-weight: 700; color: #2563eb; }
+  .rating-row .star-row .star { font-size: .9rem; }
+  .rating-row .star.full { color: #f59e0b; }
+  .rating-row .star.half { color: #f59e0b; position: relative; }
+  .rating-row .star.half::after { content: '★'; color: #e5e7eb; position: absolute; left: 0; width: 50%; overflow: hidden; }
+  .rating-row .star.empty { color: #e5e7eb; }
+</style>

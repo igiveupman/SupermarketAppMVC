@@ -58,6 +58,26 @@ connection.query(
         }
     }
 );
+// Ensure product_reviews table exists (ratings)
+connection.query(
+    'CREATE TABLE IF NOT EXISTS product_reviews (' +
+    'id INT AUTO_INCREMENT PRIMARY KEY,' +
+    'product_id INT NOT NULL,' +
+    'user_id INT NOT NULL,' +
+    'rating TINYINT NOT NULL CHECK (rating BETWEEN 1 AND 5),' +
+    'title VARCHAR(100) NULL,' +
+    'comment TEXT,' +
+    'created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,' +
+    'UNIQUE KEY uq_user_product (user_id, product_id),' +
+    'FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,' +
+    'FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE' +
+    ')',
+    (rErr) => {
+        if (rErr) {
+            console.error('Failed to ensure product_reviews table:', rErr.code || rErr);
+        }
+    }
+);
 
 // View engine: EJS templates in /views
 // Set up view engine
@@ -114,6 +134,7 @@ const Favorite = require('./models/Favorite');
 const UserController = require('./controllers/UserController');
 const adminRouter = require('./routes/adminRouter');
 const OrderController = require('./controllers/OrderController');
+const ReviewController = require('./controllers/ReviewController');
 // Lazy-load puppeteer for PDF generation
 let puppeteer;
 const AuthController = require('./controllers/AuthController');
@@ -232,6 +253,10 @@ app.get('/api/orders', checkAuthenticated, (req, res) => {
 Favorite.tableInit();
 app.get('/favorites', checkAuthenticated, FavoriteController.index);
 app.get('/favorites/toggle/:id', checkAuthenticated, FavoriteController.toggle);
+
+// Reviews (per product)
+app.post('/product/:id/review', checkAuthenticated, ReviewController.upsert);
+app.get('/product/:id/reviews', checkAuthenticated, ReviewController.list);
 
 
 // mount admin router at /admin

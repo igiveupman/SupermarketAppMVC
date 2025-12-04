@@ -5,6 +5,7 @@
  */
 const Product = require('../models/Product');
 const Favorite = require('../models/Favorite');
+const Review = require('../models/Review');
 
 module.exports = {
   index(req, res) {
@@ -33,6 +34,19 @@ module.exports = {
     const offset = (page - 1) * pageSize;
     Product.listFilteredPaged({ ...commonFilters, limit: pageSize, offset, sortBy, sortDir }, (err, products) => {
       if (err) return res.status(500).send(err);
+      const applyRatings = (prods, trendingProducts, cb) => {
+        const ids = Array.from(new Set([...prods, ...trendingProducts].map(p => p.id))).filter(Boolean);
+        if (!ids.length) return cb(null, prods, trendingProducts);
+        Review.getStatsForProducts(ids, (rErr, statsMap) => {
+          if (rErr) return cb(rErr);
+          const addStats = (arr) => arr.map(p => {
+            const stats = statsMap[p.id] || { reviewCount: 0, averageRating: null };
+            return { ...p, reviewCount: stats.reviewCount, averageRating: stats.averageRating };
+          });
+          cb(null, addStats(prods), addStats(trendingProducts));
+        });
+      };
+
       const renderWithFavorites = (prods, trendingProducts) => {
         if (req.session.user) {
           Favorite.list(req.session.user.id, (favErr, favs) => {
@@ -80,11 +94,17 @@ module.exports = {
       // Fetch featured subset for trending section (respect filters)
       if (trendingMode) {
         // main list already featured-only via featuredOnly flag when toggled
-        return renderWithFavorites(products, []);
+        applyRatings(products, [], (rErr, ratedProds, ratedTrending) => {
+          if (rErr) return res.status(500).send(rErr);
+          renderWithFavorites(ratedProds, ratedTrending);
+        });
       } else {
         Product.getFeatured({ search, category, limit: 6 }, (featErr, featuredRows) => {
           if (featErr) return res.status(500).send(featErr);
-          renderWithFavorites(products, featuredRows || []);
+          applyRatings(products, featuredRows || [], (rErr, ratedProds, ratedTrending) => {
+            if (rErr) return res.status(500).send(rErr);
+            renderWithFavorites(ratedProds, ratedTrending);
+          });
         });
       }
     });
@@ -93,20 +113,59 @@ module.exports = {
 
   // Product details page
   show(req, res) {
-    // Fetch a single product and optionally mark favorited state for logged-in users
+    // Fetch a single product, its favorites state, and reviews
+    const reviewPage = Math.max(1, parseInt(req.query.reviewPage || '1', 10));
+    const reviewPageSize = 5;
     Product.getById(req.params.id, (err, product) => {
       if (err) return res.status(500).send(err);
       if (!product) return res.status(404).send('Not found');
-      // If user logged in, fetch favorites to mark heart state
+
+      const loadReviewData = (cb) => {
+        const offset = (reviewPage - 1) * reviewPageSize;
+        Review.listByProduct(product.id, { limit: reviewPageSize, offset }, (rErr, reviews) => {
+          if (rErr) return cb(rErr);
+          Review.getStats(product.id, (sErr, stats) => {
+            if (sErr) return cb(sErr);
+            if (req.session.user) {
+              Review.getUserReview(req.session.user.id, product.id, (uErr, userReview) => {
+                if (uErr) return cb(uErr);
+                cb(null, { reviews, stats, userReview });
+              });
+            } else {
+              cb(null, { reviews, stats, userReview: null });
+            }
+          });
+        });
+      };
+
+      const renderProduct = (favorited) => {
+        product.favorited = favorited;
+        loadReviewData((revErr, reviewData) => {
+          if (revErr) return res.status(500).send(revErr);
+          const messages = req.flash('success') || [];
+          const errors = req.flash('error') || [];
+          return res.render('product', {
+            product,
+            user: req.session.user || null,
+            messages,
+            errors,
+            reviews: reviewData.reviews || [],
+            reviewStats: reviewData.stats || { reviewCount: 0, averageRating: null },
+            userReview: reviewData.userReview,
+            reviewPage,
+            reviewPageSize
+          });
+        });
+      };
+
       if (req.session.user) {
         Favorite.list(req.session.user.id, (favErr, favs) => {
           if (favErr) return res.status(500).send(favErr);
           const favIds = new Set(favs.map(f => f.id || f.product_id));
-          product.favorited = favIds.has(product.id);
-          return res.render('product', { product, user: req.session.user, messages: req.flash('success') || [], errors: req.flash('error') || [] });
+          return renderProduct(favIds.has(product.id));
         });
       } else {
-        return res.render('product', { product, user: null, messages: [], errors: [] });
+        return renderProduct(false);
       }
     });
   },

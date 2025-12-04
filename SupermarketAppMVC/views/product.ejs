@@ -26,6 +26,28 @@
           <% } %>
         </div>
         <h2 class="fw-semibold mb-1"><%= product.productName %></h2>
+        <% 
+          const avgRatingRaw = (reviewStats && reviewStats.averageRating) ? reviewStats.averageRating : 0;
+          const avgRating = avgRatingRaw ? Number(avgRatingRaw).toFixed(1) : '0.0';
+          const avgNum = Number(avgRating);
+          const fullStars = Math.floor(avgNum);
+          const halfStar = (avgNum - fullStars) >= 0.5;
+          const emptyStars = 5 - fullStars - (halfStar ? 1 : 0);
+        %>
+        <div class="d-flex align-items-center gap-2 mb-2">
+          <% if (reviewStats && reviewStats.reviewCount) { %>
+            <span class="avg-score"><%= avgRating %></span>
+            <div class="star-row">
+              <% for (let i = 0; i < fullStars; i++) { %><span class="star full">★</span><% } %>
+              <% if (halfStar) { %><span class="star half">★</span><% } %>
+              <% for (let i = 0; i < emptyStars; i++) { %><span class="star empty">★</span><% } %>
+            </div>
+            <span class="vr-line">|</span>
+            <small class="text-muted"><%= reviewStats.reviewCount %> rating<%= reviewStats.reviewCount === 1 ? '' : 's' %></small>
+          <% } else { %>
+            <small class="text-muted">No ratings yet</small>
+          <% } %>
+        </div>
         <p class="text-muted mb-3 small">Product ID: <%= product.id %></p>
         <div class="price-tag mb-3">
           <% if (product.discount_price) { %>
@@ -67,6 +89,89 @@
         </div>
       </div>
     </div>
+    <div class="row mt-4">
+      <div class="col-lg-8">
+        <div class="card shadow-sm">
+          <div class="card-body">
+            <div class="d-flex align-items-center justify-content-between">
+              <div>
+                <h5 class="mb-0">Reviews</h5>
+                <small class="text-muted">
+                  <% if (reviewStats && reviewStats.reviewCount) { %>
+                    <%= reviewStats.reviewCount %> review<%= reviewStats.reviewCount === 1 ? '' : 's' %>
+                  <% } else { %>
+                    No reviews yet
+                  <% } %>
+                </small>
+              </div>
+              <% if (reviewStats && reviewStats.averageRating) { %>
+                <div class="d-flex align-items-center gap-2">
+                  <span class="avg-score"><%= avgRating %></span>
+                  <div class="star-row">
+                    <% for (let i = 0; i < fullStars; i++) { %><span class="star full">★</span><% } %>
+                    <% if (halfStar) { %><span class="star half">★</span><% } %>
+                    <% for (let i = 0; i < emptyStars; i++) { %><span class="star empty">★</span><% } %>
+                  </div>
+                  <span class="vr-line">|</span>
+                  <small class="text-muted"><%= reviewStats.reviewCount %> rating<%= reviewStats.reviewCount === 1 ? '' : 's' %></small>
+                </div>
+              <% } %>
+            </div>
+            <% if (user) { %>
+              <form action="/product/<%= product.id %>/review" method="POST" class="mt-3">
+                <div class="row g-3 align-items-end">
+                  <div class="col-sm-2">
+                    <label class="form-label mb-1">Rating</label>
+                    <select name="rating" class="form-select" required>
+                      <% [5,4,3,2,1].forEach(r => { %>
+                        <option value="<%= r %>" <%= userReview && userReview.rating === r ? 'selected' : '' %>><%= r %> / 5</option>
+                      <% }); %>
+                    </select>
+                  </div>
+                  <div class="col-sm-10">
+                    <label class="form-label mb-1">Title (optional)</label>
+                    <input type="text" name="title" class="form-control" maxlength="100" value="<%= userReview && userReview.title ? userReview.title : '' %>">
+                  </div>
+                  <div class="col-12">
+                    <label class="form-label mb-1">Comment (optional)</label>
+                    <textarea name="comment" class="form-control" rows="3" maxlength="1000"><%= userReview && userReview.comment ? userReview.comment : '' %></textarea>
+                  </div>
+                  <div class="col-12 d-flex justify-content-between align-items-center">
+                    <small class="text-muted">You can update your review anytime.</small>
+                    <button type="submit" class="btn btn-primary btn-sm">Save review</button>
+                  </div>
+                </div>
+              </form>
+            <% } else { %>
+              <p class="mt-3 text-muted">Log in to leave a review.</p>
+            <% } %>
+
+            <div class="mt-4">
+              <% if (reviews && reviews.length) { %>
+                <% reviews.forEach(r => { %>
+                  <div class="border-bottom pb-3 mb-3">
+                    <div class="d-flex justify-content-between">
+                      <div>
+                        <strong><%= r.username %></strong>
+                        <div class="text-warning small"><%= '★'.repeat(r.rating) %><%= '☆'.repeat(5 - r.rating) %> (<%= r.rating %>/5)</div>
+                      </div>
+                      <small class="text-muted"><%= new Date(r.created_at).toLocaleDateString() %></small>
+                    </div>
+                    <% if (r.title) { %><div class="fw-semibold mt-1"><%= r.title %></div><% } %>
+                    <% if (r.comment) { %><div class="text-muted mt-1"><%= r.comment %></div><% } %>
+                  </div>
+                <% }); %>
+                <% if ((reviews || []).length === reviewPageSize) { %>
+                  <a class="btn btn-outline-secondary btn-sm" href="/product/<%= product.id %>?reviewPage=<%= reviewPage + 1 %>">Next reviews</a>
+                <% } %>
+              <% } else { %>
+                <p class="text-muted mb-0">No reviews yet. Be the first to review this product.</p>
+              <% } %>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 <% } else { %>
   <div class="alert alert-danger">No product found.</div>
@@ -83,6 +188,13 @@
   .product-detail { background:var(--surface-bg,#f8fafc); padding:1rem 0 2rem; }
   .product-image-wrapper { background:#fff; }
   #qtyError { margin-top:-0.5rem; }
+  .avg-score { font-weight:700; color:#2563eb; }
+  .vr-line { color:#cbd5e1; }
+  .star-row .star { font-size:1rem; }
+  .star.full { color:#f59e0b; }
+  .star.half { color:#f59e0b; position:relative; }
+  .star.half::after { content:'★'; color:#e5e7eb; position:absolute; left:0; width:50%; overflow:hidden; }
+  .star.empty { color:#e5e7eb; }
 </style>
 <script>
   (function(){
