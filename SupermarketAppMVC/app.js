@@ -4,8 +4,6 @@ const path = require('path');
 const envPath = path.join(__dirname, '.env');
 require('dotenv').config({ path: envPath }); // Load environment variables early
 const express = require('express');
-// Use centralized db connection from db.js instead of creating a second one
-const mysql = require('mysql2');
 const session = require('express-session');
 const flash = require('connect-flash');
 // Multer handles file uploads (used by admin to upload product images)
@@ -280,9 +278,9 @@ app.post('/product/:id/feature', checkAuthenticated, checkAdmin, (req, res) => {
         ProductModel.updateFeatured(req.params.id, true, (err) => {
             if (err) {
                 console.error('Failed to feature product', err);
-                req.flash('error', `Couldn’t feature ${name}`);
+                req.flash('error', `Couldn't feature ${name}`);
             } else {
-                req.flash('success', `✨ Featured: ${name}`);
+                req.flash('success', `Featured: ${name}`);
             }
             return res.redirect('/inventory');
         });
@@ -295,15 +293,14 @@ app.post('/product/:id/unfeature', checkAuthenticated, checkAdmin, (req, res) =>
         ProductModel.updateFeatured(req.params.id, false, (err) => {
             if (err) {
                 console.error('Failed to unfeature product', err);
-                req.flash('error', `Couldn’t remove from trending: ${name}`);
+                req.flash('error', `Couldn't remove from trending: ${name}`);
             } else {
-                req.flash('success', `★ Removed from Trending: ${name}`);
+                req.flash('success', `Removed from trending: ${name}`);
             }
             return res.redirect('/inventory');
         });
     });
 });
-
 
 // Debug route to list all registered routes (dev only)
 app.get('/debug/routes', (req, res) => {
@@ -341,3 +338,4 @@ if (require.main === module) {
 }
 
 module.exports = app;
+
