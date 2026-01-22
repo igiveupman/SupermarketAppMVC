@@ -10,11 +10,11 @@
 <% /* Category widgets (chips). Clicking active one again clears its filter. */ %>
 <div class="action-widgets mb-3 category-widgets">
   <% const categories = [
-    { key: '', label: 'All', icon: '&#128722;' },
-    { key: 'Bakery', label: 'Bakery', icon: '&#127838;' },
-    { key: 'Dairy', label: 'Dairy', icon: '&#129371;' },
-    { key: 'Produce', label: 'Fruits & Veg', icon: '&#127817;' },
-    { key: 'Meats', label: 'Meats', icon: '&#127830;' }
+    { key: '', label: 'All', iconSrc: '/images/logo.png', iconClass: 'icon-logo' },
+    { key: 'Bakery', label: 'Bakery', iconSrc: '/images/bread.png' },
+    { key: 'Dairy', label: 'Dairy', iconSrc: '/images/milk.png' },
+    { key: 'Produce', label: 'Fruits & Veg', iconSrc: '/images/broccoli.png' },
+    { key: 'Meats', label: 'Meats', iconSrc: '/images/beef.jpg' }
   ]; %>
   <% const buildQuery = (params) => {
        const parts = [];
@@ -25,14 +25,18 @@
      }; %>
   <!-- Trending widget: toggles featured-only mode -->
   <a class="widget <%= __trendingMode ? 'active' : '' %>" href="/shopping<%= __trendingMode ? buildQuery({ search, category }) : buildQuery({ trending: true, search, category }) %>" aria-label="Toggle trending products">
-    <div class="widget-icon">&#11088;</div>
+    <div class="widget-icon">
+      <img class="widget-icon-img" src="/images/apples.png" alt="" aria-hidden="true">
+    </div>
     <div class="widget-body">
       <h4>Trending</h4>
     </div>
   </a>
   <% categories.forEach(c => { %>
   <a class="widget <%= (category === c.key || (!category && c.key === '')) ? 'active' : '' %>" href="/shopping<%= (category === c.key) ? buildQuery({ search, trending: __trendingMode }) : buildQuery({ category: c.key, search, trending: __trendingMode }) %>" aria-label="Filter by <%= c.label %>">
-      <div class="widget-icon"><%- c.icon %></div>
+      <div class="widget-icon">
+        <img class="widget-icon-img<%= c.iconClass ? ' ' + c.iconClass : '' %>" src="<%= c.iconSrc %>" alt="" aria-hidden="true">
+      </div>
       <div class="widget-body">
         <h4><%= c.label %></h4>
       </div>
@@ -67,7 +71,7 @@
 <div class="products-grid">
   <% if (!__trendingMode && typeof trendingProducts !== 'undefined' && trendingProducts.length) { %>
     <div style="grid-column:1/-1">
-      <h3 class="mt-4 mb-2">&#11088; Trending Products</h3>
+      <h3 class="mt-4 mb-2"><img class="section-icon" src="/images/apples.png" alt="" aria-hidden="true">Trending Products</h3>
       <div class="products-grid trending-grid">
         <% trendingProducts.forEach(tp => { %>
           <%- include('partials/productCard', { p: tp, user, showFavorite: true, clickable: true, returnTo: '/shopping' }) %>

@@ -105,6 +105,8 @@ a:hover:not(.widget) { text-decoration:underline; }
 .widget:active { transform:translateY(-2px); }
 .widget-icon { width:58px; height:58px; display:flex; align-items:center; justify-content:center; border-radius:14px; background:linear-gradient(140deg,#eef6ff,#e3f0ff); box-shadow:0 4px 10px -4px rgba(0,75,155,.3), inset 0 1px 0 rgba(255,255,255,.6); color:#0b3b5c; }
 .widget-icon svg { width:26px; height:26px; stroke:currentColor; fill:none; stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round; }
+.widget-icon-img { width:40px; height:40px; object-fit:cover; border-radius:10px; background:#fff; padding:4px; box-shadow:0 4px 10px -6px rgba(11,59,92,.45); }
+.widget-icon-img.icon-logo { object-fit:contain; padding:6px; }
 .widget-body h4 { margin:0; font-size:1.05rem; font-weight:700; }
 .widget-body p { margin:6px 0 0; font-size:.92rem; color:#0b1f38; font-weight:500; }
 .widget-action { margin-left:auto; font-size:1.1rem; color:var(--color-text-light); }
@@ -121,6 +123,7 @@ a:hover:not(.widget) { text-decoration:underline; }
 
 /* Cards Grid */
 .products-grid { display:grid; gap:28px; grid-template-columns: repeat(auto-fill,minmax(240px,1fr)); margin-top:20px; }
+.section-icon { display:inline-block; width:24px; height:24px; object-fit:cover; border-radius:6px; margin-right:8px; vertical-align:-4px; box-shadow:0 6px 12px -8px rgba(15,23,42,.45); }
 .product-card { background:var(--color-surface); border:1px solid var(--color-border); border-radius: 18px; padding:18px 18px 16px; display:flex; flex-direction:column; position:relative; box-shadow:var(--shadow-sm); transition:var(--transition); }
 .product-card:hover { box-shadow: var(--shadow-md); transform: translateY(-3px); }
 .product-card img { width:160px; height:160px; object-fit:contain; margin:0 auto 10px; }
