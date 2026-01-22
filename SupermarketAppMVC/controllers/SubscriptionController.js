@@ -115,6 +115,7 @@ module.exports = {
     });
   },
 
+  // Renders the subscription payment page for the selected tier.
   checkoutForm(req, res) {
     const targetTier = (req.query.tier || '').toLowerCase();
     const selected = getTierById(targetTier);
@@ -136,6 +137,7 @@ module.exports = {
     });
   },
 
+  // Validates method and routes to external payment flows as needed.
   checkoutProcess(req, res) {
     const targetTier = (req.session.subscription_checkout_tier || '').toLowerCase();
     const selected = getTierById(targetTier);
@@ -156,6 +158,7 @@ module.exports = {
       req.flash('error', 'Stripe payment must be confirmed on this page.');
       return res.redirect('/subscription/checkout?tier=' + selected.id);
     }
+    // NETS QR: external flow; success callback will trigger complete().
     if (method === 'nets') {
       req.session.subscription_payment_flow = 'nets';
       return netsQr.generateQrCodeForAmount(req, res, selected.price.toFixed(2));
@@ -166,6 +169,7 @@ module.exports = {
     return applySubscriptionUpgrade(req, res, selected);
   },
 
+  // PayPal create-order for subscription payment.
   paypalCreateOrder(req, res) {
     const targetTier = (req.session.subscription_checkout_tier || '').toLowerCase();
     const selected = getTierById(targetTier);
@@ -175,6 +179,7 @@ module.exports = {
       .catch((err) => res.status(500).json({ error: 'Failed to create PayPal order', message: err.message }));
   },
 
+  // PayPal capture then redirect to complete().
   paypalCaptureOrder(req, res) {
     const { orderID } = req.body;
     const targetTier = (req.session.subscription_checkout_tier || '').toLowerCase();
@@ -191,6 +196,7 @@ module.exports = {
       .catch((err) => res.status(500).json({ error: 'Failed to capture PayPal order', message: err.message }));
   },
 
+  // Finalizes the subscription after external payment success.
   complete(req, res) {
     const capturedPaypal = !!req.session.subscription_paypal_captured;
     const capturedNets = !!req.session.subscription_nets_captured;

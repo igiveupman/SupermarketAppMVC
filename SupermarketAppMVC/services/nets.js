@@ -11,6 +11,7 @@ function getCourseInitId() {
   }
 }
 
+// NETS QR for cart checkout (amount from cart total).
 exports.generateQrCode = async (req, res) => {
   const cart = req.session.cart || [];
   if (!cart.length) {
@@ -95,6 +96,7 @@ exports.generateQrCode = async (req, res) => {
   }
 };
 
+// NETS QR for subscriptions (fixed amount).
 exports.generateQrCodeForAmount = async (req, res, amount) => {
   if (!process.env.NETS_API_KEY || !process.env.NETS_PROJECT_ID) {
     return res.render('netsQrFail', {

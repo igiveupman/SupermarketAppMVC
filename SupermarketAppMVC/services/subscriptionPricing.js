@@ -20,6 +20,7 @@ function getDiscountRate(tier) {
   return DISCOUNT_RATES[tier] || 0;
 }
 
+// Applies subscription benefits (discount + delivery rules) to cart totals.
 function computeCartPricing(cart, user) {
   const tier = getTier(user);
   const discountRate = getDiscountRate(tier);

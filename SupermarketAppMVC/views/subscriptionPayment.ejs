@@ -138,6 +138,7 @@
     paypalRadio.addEventListener('change', sync);
     sync();
 
+    // Stripe card flow: create PaymentIntent -> confirm -> submit to server for verification.
     paymentForm.addEventListener('submit', async (event) => {
       const useStripe = stripeRadio.checked;
       if (!useStripe) return;

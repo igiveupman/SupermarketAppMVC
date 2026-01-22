@@ -10,10 +10,12 @@ function getSubscriptionCheckout(req) {
 }
 
 module.exports = {
+  // Creates a PaymentIntent for cart checkout.
   async createOrderIntent(req, res) {
     try {
       const cart = req.session.cart || [];
       if (!cart.length) return res.status(400).json({ error: 'Cart is empty.' });
+      // Amount is computed server-side to prevent tampering.
       const pricing = computeCartPricing(cart, req.session.user);
       const intent = await stripe.createPaymentIntent(pricing.total, {
         type: 'order',
@@ -25,6 +27,7 @@ module.exports = {
     }
   },
 
+  // Verifies Stripe result and completes the order.
   async completeOrder(req, res) {
     try {
       const paymentIntentId = req.body.payment_intent;
@@ -43,11 +46,13 @@ module.exports = {
         req.flash('error', 'Your cart is empty.');
         return res.redirect('/cart');
       }
+      // Confirm with Stripe that the PaymentIntent succeeded.
       const intent = await stripe.retrievePaymentIntent(paymentIntentId);
       if (!intent || intent.status !== 'succeeded') {
         req.flash('error', 'Stripe payment was not authorized.');
         return res.redirect('/purchase');
       }
+      // Recompute total and ensure it matches the captured amount.
       const pricing = computeCartPricing(cart, req.session.user);
       if (stripe.toMinorUnits(pricing.total) !== intent.amount) {
         req.flash('error', 'Stripe payment amount mismatch.');
@@ -64,6 +69,7 @@ module.exports = {
     }
   },
 
+  // Creates a PaymentIntent for subscription upgrade.
   async createSubscriptionIntent(req, res) {
     try {
       const { tier, price } = getSubscriptionCheckout(req);
@@ -80,6 +86,7 @@ module.exports = {
     }
   },
 
+  // Verifies Stripe result and upgrades the user's tier.
   async completeSubscription(req, res) {
     try {
       const paymentIntentId = req.body.payment_intent;

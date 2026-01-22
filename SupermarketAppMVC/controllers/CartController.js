@@ -1,4 +1,5 @@
 // CartController: manages session-based cart and checkout
+// Payment flow: method selection -> optional external capture -> checkout() for order creation
 const Product = require('../models/Product');
 const Order = require('../models/Order');
 const db = require('../db');
@@ -97,6 +98,7 @@ module.exports = {
   paymentForm(req, res) {
     const cart = req.session.cart || [];
     if (!cart.length) { req.flash('error', 'Your cart is empty.'); return res.redirect('/cart'); }
+    // Pricing is computed server-side to keep totals consistent across methods.
     const pricing = computeCartPricing(cart, req.session.user);
     res.render('paymentMethod', { cart: pricing.items, pricing, user: req.session.user, messages: req.flash('success'), errors: req.flash('error') });
   },
@@ -262,6 +264,7 @@ module.exports = {
 
 
   // Checkout: verify stock, decrement product quantities, clear cart, and record order
+  // Finalizes an order after payment is confirmed.
   checkout(req, res) {
     const cart = req.session.cart || [];
     if (!cart.length) {
@@ -285,12 +288,14 @@ module.exports = {
           const price = prod && prod.discount_price ? parseFloat(prod.discount_price) : parseFloat(prod.price);
           return { productId: i.productId, quantity: i.quantity, price };
         });
+        // Recompute totals at checkout time (authoritative).
         const pricing = computeCartPricing(cartForPricing, req.session.user);
         const orderItems = pricing.items.map((i) => ({
           productId: i.productId,
           quantity: i.quantity,
           price: i.effectivePrice
         }));
+        // Persist the order with the payment method + delivery fee.
         Order.create({
           user_id: req.session.user.id,
           total: pricing.total.toFixed(2),
@@ -332,6 +337,7 @@ module.exports = {
         req.session.cart = [];
         clearCartDb(req.session.user.id).catch(()=>{});
         // If coming from payment page or NETS flow, show success screen, else redirect
+        // Render success page for explicit payment flows; otherwise redirect to shopping.
         if (req.path === '/purchase' || req.session.payment_flow === 'nets' || req.session.payment_flow === 'paypal' || req.session.payment_flow === 'stripe') {
           req.session.payment_flow = null;
           const successMsg = 'Payment successful. Delivery to: ' + (req.session.checkout_address || 'N/A');
@@ -349,7 +355,7 @@ module.exports = {
         res.redirect('/cart');
       });
   },
-  // Simulate processing payment, validate delivery info, then reuse checkout flow
+  // Validates method + delivery, then routes to the correct payment flow.
   paymentProcess(req, res) {
   const { method, card_number, expiry, cvv, delivery_address, delivery_contact } = req.body; // removed card_name (simulation)
     const allowedMethods = new Set(['stripe', 'paynow', 'nets', 'paypal']);
@@ -372,13 +378,13 @@ module.exports = {
     req.session.payment_method = method;
 
     // NETS QR uses a separate flow; generate QR and wait for success callback
+    // NETS QR: external flow; success callback will call checkout().
     if (method === 'nets') {
       req.session.payment_flow = 'nets';
       return netsQr.generateQrCode(req, res);
     }
 
-    // Dummy methods (PayNow) skip extra validation
-    // Reuse checkout logic (path check will render success page)
+    // PayNow is simulated; reuse checkout logic.
     module.exports.checkout(req, res);
   },
 

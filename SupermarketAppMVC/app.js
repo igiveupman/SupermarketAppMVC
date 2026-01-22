@@ -239,7 +239,7 @@ app.post('/api/cart/checkout', checkAuthenticated, CartController.apiCheckout);
 // New purchase flow
 app.get('/purchase', checkAuthenticated, CartController.paymentForm);
 app.post('/purchase', checkAuthenticated, CartController.paymentProcess);
-// PayPal: Create Order
+// PayPal: Create Order (cart checkout)
 app.post('/api/paypal/create-order', checkAuthenticated, async (req, res) => {
     try {
         const { amount } = req.body;
@@ -282,7 +282,7 @@ app.get('/paypal/complete', checkAuthenticated, (req, res) => {
     req.session.payment_flow = 'paypal';
     return CartController.checkout(req, res);
 });
-// NETS QR callbacks
+// NETS QR callbacks (cart or subscription)
 app.get('/nets-qr/success', checkAuthenticated, (req, res) => {
     if (req.session.subscription_payment_flow === 'nets') {
         req.session.subscription_payment_flow = null;
@@ -386,7 +386,7 @@ app.post('/subscription/cancel', checkAuthenticated, SubscriptionController.canc
 app.post('/api/paypal/subscription/create-order', checkAuthenticated, SubscriptionController.paypalCreateOrder);
 app.post('/api/paypal/subscription/capture-order', checkAuthenticated, SubscriptionController.paypalCaptureOrder);
 
-// Stripe card payments
+// Stripe card payments (cart + subscription)
 app.post('/api/stripe/order-intent', checkAuthenticated, StripeController.createOrderIntent);
 app.post('/stripe/order/complete', checkAuthenticated, StripeController.completeOrder);
 app.post('/api/stripe/subscription-intent', checkAuthenticated, StripeController.createSubscriptionIntent);

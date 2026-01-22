@@ -1,5 +1,6 @@
 const Stripe = require('stripe');
 
+// Stripe client is created per call to keep config centralized.
 function getClient() {
   const key = process.env.STRIPE_SECRET_KEY;
   if (!key) return null;
@@ -14,6 +15,7 @@ function toMinorUnits(amount) {
   return Math.round(value * 100);
 }
 
+// Create a PaymentIntent for card payments (SGD).
 async function createPaymentIntent(amount, metadata) {
   const client = getClient();
   if (!client) throw new Error('Stripe secret key is missing.');
@@ -24,6 +26,7 @@ async function createPaymentIntent(amount, metadata) {
   });
 }
 
+// Fetch a PaymentIntent to verify status server-side.
 async function retrievePaymentIntent(paymentIntentId) {
   const client = getClient();
   if (!client) throw new Error('Stripe secret key is missing.');

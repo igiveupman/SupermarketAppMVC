@@ -17,6 +17,7 @@ async function getAccessToken() {
   return data.access_token;
 }
 
+// Create a PayPal order for the given total amount.
 async function createOrder(amount) {
   const accessToken = await getAccessToken();
   const response = await fetch(`${PAYPAL_API}/v2/checkout/orders`, {
@@ -40,6 +41,7 @@ async function createOrder(amount) {
   return await response.json();
 }
 
+// Capture a previously created PayPal order.
 async function captureOrder(orderId) {
   const accessToken = await getAccessToken();
   const response = await fetch(`${PAYPAL_API}/v2/checkout/orders/${orderId}/capture`, {
