@@ -633,5 +633,104 @@
       }
     ],
     "userId": 5
+  },
+  {
+    "timestamp": 1768544018763,
+    "items": [
+      {
+        "productId": 23,
+        "productName": "Cheese",
+        "price": 5,
+        "originalPrice": 5,
+        "discountApplied": false,
+        "quantity": 1,
+        "image": "cheese.jpg"
+      }
+    ],
+    "userId": 5
+  },
+  {
+    "timestamp": 1768799189786,
+    "items": [
+      {
+        "productId": 4,
+        "productName": "Bread",
+        "price": 1.62,
+        "originalPrice": 1.8,
+        "discountApplied": true,
+        "quantity": 1,
+        "image": "bread.png"
+      }
+    ],
+    "userId": 5
+  },
+  {
+    "timestamp": 1768980880098,
+    "items": [
+      {
+        "productId": 1,
+        "productName": "Apples",
+        "price": 1.5,
+        "originalPrice": 1.5,
+        "discountApplied": false,
+        "quantity": 1,
+        "image": "apples.png"
+      }
+    ],
+    "userId": 5
+  },
+  {
+    "timestamp": 1768980922235,
+    "items": [
+      {
+        "productId": 4,
+        "productName": "Bread",
+        "price": 1.62,
+        "originalPrice": 1.8,
+        "discountApplied": true,
+        "quantity": 1,
+        "image": "bread.png"
+      }
+    ],
+    "userId": 5
+  },
+  {
+    "timestamp": 1768981408786,
+    "items": [
+      {
+        "productId": 23,
+        "productName": "Cheese",
+        "price": 5,
+        "originalPrice": 5,
+        "discountApplied": false,
+        "quantity": 1,
+        "image": "cheese.jpg"
+      },
+      {
+        "productId": 22,
+        "productName": "Mangoes",
+        "price": 3,
+        "originalPrice": 3,
+        "discountApplied": false,
+        "quantity": 1,
+        "image": "mangoes.jpg"
+      }
+    ],
+    "userId": 5
+  },
+  {
+    "timestamp": 1768982463268,
+    "items": [
+      {
+        "productId": 4,
+        "productName": "Bread",
+        "price": 1.62,
+        "originalPrice": 1.8,
+        "discountApplied": true,
+        "quantity": 1,
+        "image": "bread.png"
+      }
+    ],
+    "userId": 5
   }
 ]

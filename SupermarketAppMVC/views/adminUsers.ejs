@@ -42,12 +42,12 @@
                 <div class="user-actions btn-group" role="group">
                   <% if (u.role !== 'admin') { %>
                     <!-- Edit profile (opens update form) -->
-                    <a href="/admin/users/<%= u.id %>/edit" class="btn btn-sm btn-outline-primary" title="Edit user">&#9998; Edit</a>
+                    <a href="/admin/users/<%= u.id %>/edit" class="btn btn-sm btn-outline-primary" title="Edit user"><span class="btn-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 17l4 3 12-12-4-4L4 17z"></path><path d="M14 5l4 4"></path></svg></span>Edit</a>
                     <!-- View order history (admin view) -->
-                    <a href="/admin/users/<%= u.id %>/orders" class="btn btn-sm btn-outline-secondary" title="View order history">&#128722; Orders</a>
+                    <a href="/admin/users/<%= u.id %>/orders" class="btn btn-sm btn-outline-secondary" title="View order history"><span class="btn-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 3h10v18l-5-3-5 3V3z"></path><path d="M9 8h6"></path><path d="M9 12h6"></path></svg></span>Orders</a>
                     <!-- Delete user (confirmation guard) -->
                     <form action="/admin/users/<%= u.id %>/delete" method="POST" onsubmit="return confirm('Delete user <%= u.username %>?');" style="display:inline">
-                      <button class="btn btn-sm btn-outline-danger" type="submit" title="Delete user">&#128465; Delete</button>
+                      <button class="btn btn-sm btn-outline-danger" type="submit" title="Delete user"><span class="btn-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 7h14"></path><path d="M9 7V5h6v2"></path><path d="M7 7l1 12h8l1-12"></path><path d="M10 11v6"></path><path d="M14 11v6"></path></svg></span>Delete</button>
                     </form>
                   <% } else { %>
                     <span class="text-muted small">Protected admin</span>
@@ -67,16 +67,20 @@
 <!-- Local styles specific to Manage Users page; keep lightweight and scoped -->
 <style>
   .users-panel { max-width: 980px; margin: 0 auto; }
-  .users-table-wrapper { border-radius: 12px; overflow: auto; box-shadow: 0 8px 24px rgba(0,0,0,0.06); background: linear-gradient(180deg, rgba(255,255,255,0.85), rgba(255,255,255,0.9)); }
-  .auth-header { text-align: center; margin-bottom: 16px; }
-  .auth-title { font-size: 42px; font-weight: 800; letter-spacing: 0.3px; }
-  .auth-sub { color: #64748b; }
-  .table-clean thead tr { background: #f1f5f9; }
-  .table-clean td, .table-clean th { padding: 12px 16px; }
-  .user-actions .btn { min-width: 100px; border-radius: 12px; }
+  .users-table-wrapper { border-radius: 14px; overflow: auto; box-shadow: 0 12px 28px rgba(15,23,42,0.08); background: linear-gradient(180deg, rgba(255,255,255,0.9), rgba(255,255,255,0.95)); }
+  .auth-header { text-align: center; margin-bottom: 12px; }
+  .auth-title { font-size: 34px; font-weight: 700; letter-spacing: 0.2px; }
+  .auth-sub { color: #667085; font-size: 0.95rem; }
+  .table-clean thead tr { background: #f4f6f9; }
+  .table-clean td, .table-clean th { padding: 10px 14px; }
+  .user-actions { gap: 8px; }
+  .user-actions .btn { min-width: 88px; border-radius: 10px; padding: 6px 10px; font-size: 0.78rem; letter-spacing: 0.3px; }
+  .user-actions .btn .btn-icon { width: 14px; height: 14px; margin-right: 0.35rem; }
+  .user-actions .btn .btn-icon svg { width: 14px; height: 14px; }
+  .badge { font-size: 0.75rem; padding: 0.35rem 0.6rem; border-radius: 999px; }
   .badge.bg-danger { background-color: #ef4444 !important; }
   .badge.bg-secondary { background-color: #64748b !important; }
   /* Optional hover state for better affordance */
-  .users-table tbody tr.user-row:hover { background-color: #f9fbfd; }
+  .users-table tbody tr.user-row:hover { background-color: #f7f9fc; }
 </style>
 <%- include('partials/footer') %>

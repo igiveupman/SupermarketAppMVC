@@ -1,22 +1,29 @@
 <%- include('partials/header', { user, pageTitle: 'User Orders', currentPage: 'adminUsers', messages: (typeof messages !== 'undefined' ? messages : []), errors: (typeof errors !== 'undefined' ? errors : []) }) %>
 <div class="container-wide">
-  <h2>User Orders: <%= subjectUser.username %> (<%= subjectUser.email %>)</h2>
-  <div class="mb-3">
-    <form action="/admin/users/<%= subjectUser.id %>/orders/clear" method="post" onsubmit="return confirm('Clear all orders for this user? This cannot be undone.');">
-      <button class="btn btn-danger">Clear Order History</button>
-      <a class="btn btn-secondary" href="/admin/users">Back to Users</a>
-    </form>
+  <div class="admin-orders-header">
+    <div class="admin-orders-title">
+      <div class="eyebrow">User Orders</div>
+      <h2><%= subjectUser.username %></h2>
+      <div class="subline"><%= subjectUser.email %></div>
+    </div>
+    <div class="admin-orders-actions">
+      <a class="btn btn-outline" href="/admin/users"><span class="btn-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M14 6l-6 6 6 6"></path></svg></span>Back to Users</a>
+      <form action="/admin/users/<%= subjectUser.id %>/orders/clear" method="post" onsubmit="return confirm('Clear all orders for this user? This cannot be undone.');">
+        <button class="btn btn-danger" type="submit"><span class="btn-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 7h14"></path><path d="M9 7V5h6v2"></path><path d="M7 7l1 12h8l1-12"></path><path d="M10 11v6"></path><path d="M14 11v6"></path></svg></span>Clear Order History</button>
+      </form>
+    </div>
   </div>
 
   <% if (!orders.length) { %>
     <div class="alert alert-info">No orders found for this user.</div>
   <% } else { %>
     <div class="list-group">
-      <% orders.forEach(o => { %>
+      <% orders.forEach((o, idx) => { %>
+        <% const orderNumber = typeof o.displayNumber !== 'undefined' ? o.displayNumber : (orders.length - idx); %>
         <div class="list-group-item mb-3">
           <div class="d-flex justify-content-between">
             <div>
-              <strong>Order #<%= o.id %></strong> - <span class="text-muted"><%= new Date(o.created_at || o.createdAt).toLocaleString() %></span>
+              <strong>Order #<%= orderNumber %></strong> - <span class="text-muted"><%= new Date(o.created_at || o.createdAt).toLocaleString() %></span>
             </div>
             <div>
               <a class="btn btn-sm btn-outline-primary" href="/orders/<%= o.id %>/invoice" target="_blank">View Invoice</a>
@@ -45,6 +52,32 @@
         </div>
       <% }) %>
     </div>
+    <% if (totalPages > 1) { %>
+      <nav class="mt-3" aria-label="Orders pagination">
+        <ul class="pagination justify-content-center">
+          <li class="page-item <%= page <= 1 ? 'disabled' : '' %>">
+            <a class="page-link" href="/admin/users/<%= subjectUser.id %>/orders?page=<%= page - 1 %>">Previous</a>
+          </li>
+          <% for (let p = 1; p <= totalPages; p++) { %>
+            <li class="page-item <%= p === page ? 'active' : '' %>">
+              <a class="page-link" href="/admin/users/<%= subjectUser.id %>/orders?page=<%= p %>"><%= p %></a>
+            </li>
+          <% } %>
+          <li class="page-item <%= page >= totalPages ? 'disabled' : '' %>">
+            <a class="page-link" href="/admin/users/<%= subjectUser.id %>/orders?page=<%= page + 1 %>">Next</a>
+          </li>
+        </ul>
+      </nav>
+    <% } %>
   <% } %>
 </div>
 <%- include('partials/footer') %>
+<style>
+  .admin-orders-header { display:flex; align-items:center; justify-content:space-between; gap:16px; padding:18px 20px; border-radius:16px; background:linear-gradient(120deg,#ffffff,#f3efe9); border:1px solid #e6e1da; box-shadow:0 12px 28px -24px rgba(15,23,42,.4); margin: 10px 0 18px; flex-wrap:wrap; }
+  .admin-orders-title h2 { margin:0; font-size:28px; font-weight:700; letter-spacing:.2px; }
+  .admin-orders-title .eyebrow { text-transform:uppercase; letter-spacing:.2em; font-size:.7rem; color:#7a8696; font-weight:600; }
+  .admin-orders-title .subline { color:#667085; font-size:.95rem; }
+  .admin-orders-actions { display:flex; gap:10px; align-items:center; }
+  .admin-orders-actions form { margin:0; }
+  @media (max-width:720px){ .admin-orders-actions { width:100%; justify-content:flex-start; } }
+</style>

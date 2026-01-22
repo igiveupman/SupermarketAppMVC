@@ -44,6 +44,17 @@ const Order = {
   listByUser(userId, callback) {
     db.query('SELECT * FROM orders WHERE user_id = ? ORDER BY created_at DESC', [userId], callback);
   },
+  // Count orders for a specific user
+  countByUser(userId, callback) {
+    db.query('SELECT COUNT(*) AS total FROM orders WHERE user_id = ?', [userId], (err, rows) => {
+      if (err) return callback(err);
+      callback(null, rows && rows[0] ? rows[0].total : 0);
+    });
+  },
+  // List orders for a user with pagination
+  listByUserPaged(userId, limit, offset, callback) {
+    db.query('SELECT * FROM orders WHERE user_id = ? ORDER BY created_at DESC LIMIT ? OFFSET ?', [userId, limit, offset], callback);
+  },
   // Fetch a single order by id
   getById(orderId, callback) {
     db.query('SELECT * FROM orders WHERE id = ?', [orderId], (err, rows) => {

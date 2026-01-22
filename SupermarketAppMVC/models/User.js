@@ -9,21 +9,41 @@ const db = require('../db');
 const User = {
   // List all users (admin page)
   getAll(callback) {
-    db.query('SELECT id, username, email, address, contact, role, free_delivery FROM users', (err, results) => callback(err, results));
+    db.query(
+      'SELECT id, username, email, address, contact, role, free_delivery, subscription_tier, subscription_price, subscription_started_at FROM users',
+      (err, results) => callback(err, results)
+    );
   },
 
   // Fetch one user by id
   getById(id, callback) {
-    db.query('SELECT id, username, email, address, contact, role, free_delivery FROM users WHERE id = ?', [id], (err, results) => {
-      if (err) return callback(err);
-      callback(null, results[0] || null);
-    });
+    db.query(
+      'SELECT id, username, email, address, contact, role, free_delivery, subscription_tier, subscription_price, subscription_started_at FROM users WHERE id = ?',
+      [id],
+      (err, results) => {
+        if (err) return callback(err);
+        callback(null, results[0] || null);
+      }
+    );
   },
 
   // Create a new user; password hashed with SHA1 in SQL (demo purposes)
   add(user, callback) {
-    const sql = 'INSERT INTO users (username, email, password, address, contact, role, free_delivery) VALUES (?, ?, SHA1(?), ?, ?, ?, ?)';
-    db.query(sql, [user.username, user.email, user.password, user.address || null, user.contact || null, user.role || 'user', user.free_delivery ? 1 : 0], (err, result) => {
+    const sql = 'INSERT INTO users (username, email, password, address, contact, role, free_delivery, subscription_tier, subscription_price, subscription_started_at) VALUES (?, ?, SHA1(?), ?, ?, ?, ?, ?, ?, ?)';
+    const tier = user.subscription_tier || 'basic';
+    const price = Number.isFinite(user.subscription_price) ? user.subscription_price : 0;
+    db.query(sql, [
+      user.username,
+      user.email,
+      user.password,
+      user.address || null,
+      user.contact || null,
+      user.role || 'user',
+      user.free_delivery ? 1 : 0,
+      tier,
+      price,
+      user.subscription_started_at || null
+    ], (err, result) => {
       if (err) return callback(err);
       callback(null, { insertId: result.insertId, affectedRows: result.affectedRows });
     });
@@ -40,6 +60,15 @@ const User = {
     const sql = `UPDATE users SET ${fields.join(', ')} WHERE id = ?`;
     params.push(id);
     db.query(sql, params, (err, result) => {
+      if (err) return callback(err);
+      callback(null, { changedRows: result.changedRows, affectedRows: result.affectedRows });
+    });
+  },
+
+  // Update a user's subscription tier
+  updateSubscription(id, tier, price, startedAt, callback) {
+    const sql = 'UPDATE users SET subscription_tier = ?, subscription_price = ?, subscription_started_at = ? WHERE id = ?';
+    db.query(sql, [tier, price, startedAt || null, id], (err, result) => {
       if (err) return callback(err);
       callback(null, { changedRows: result.changedRows, affectedRows: result.affectedRows });
     });

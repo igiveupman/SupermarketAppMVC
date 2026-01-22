@@ -12,7 +12,7 @@ module.exports = {
       if (err) return res.status(500).send(err);
       User.getAll((err2, users) => {
         if (err2) return res.status(500).send(err2);
-        res.render('adminDashboard', { products, users, user: req.session.user, messages: req.flash('success'), errors: req.flash('error') });
+        res.render('adminDashboard', { products, users, user: req.session.user, currentPage: 'adminDashboard', messages: req.flash('success'), errors: req.flash('error') });
       });
     });
   }
@@ -35,25 +35,40 @@ module.exports = {
         req.flash('error', 'User not found');
         return res.redirect('/admin/users');
       }
-      Order.listByUser(userId, (oErr, orders) => {
-        if (oErr) {
+      const pageSize = 5;
+      const page = Math.max(1, parseInt(req.query.page || '1', 10) || 1);
+      const offset = (page - 1) * pageSize;
+      Order.countByUser(userId, (cErr, totalCount) => {
+        if (cErr) {
           req.flash('error', 'Failed to load orders');
-          return res.render('adminUserOrders', { user: admin, subjectUser, orders: [], itemsByOrder: {}, messages: req.flash('success'), errors: req.flash('error') });
+          return res.render('adminUserOrders', { user: admin, subjectUser, orders: [], itemsByOrder: {}, messages: req.flash('success'), errors: req.flash('error'), page: 1, totalPages: 1 });
         }
-        if (!orders.length) {
-          return res.render('adminUserOrders', { user: admin, subjectUser, orders: [], itemsByOrder: {}, messages: req.flash('success'), errors: req.flash('error') });
-        }
-        const ids = orders.map(o => o.id);
-        const sql = 'SELECT oi.order_id, oi.product_id, oi.quantity, oi.price, p.productName FROM order_items oi JOIN products p ON p.id = oi.product_id WHERE oi.order_id IN (?) ORDER BY oi.order_id';
-        db.query(sql, [ids], (iErr, rows) => {
-          const itemsByOrder = {};
-          if (!iErr && rows) {
-            rows.forEach(r => {
-              if (!itemsByOrder[r.order_id]) itemsByOrder[r.order_id] = [];
-              itemsByOrder[r.order_id].push(r);
-            });
+        const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
+        const safePage = Math.min(page, totalPages);
+        const safeOffset = (safePage - 1) * pageSize;
+        Order.listByUserPaged(userId, pageSize, safeOffset, (oErr, orders) => {
+          if (oErr) {
+            req.flash('error', 'Failed to load orders');
+            return res.render('adminUserOrders', { user: admin, subjectUser, orders: [], itemsByOrder: {}, messages: req.flash('success'), errors: req.flash('error'), page: safePage, totalPages });
           }
-          res.render('adminUserOrders', { user: admin, subjectUser, orders, itemsByOrder, messages: req.flash('success'), errors: req.flash('error') });
+          if (!orders.length) {
+            return res.render('adminUserOrders', { user: admin, subjectUser, orders: [], itemsByOrder: {}, messages: req.flash('success'), errors: req.flash('error'), page: safePage, totalPages });
+          }
+          orders.forEach((o, idx) => {
+            o.displayNumber = totalCount - (safeOffset + idx);
+          });
+          const ids = orders.map(o => o.id);
+          const sql = 'SELECT oi.order_id, oi.product_id, oi.quantity, oi.price, p.productName FROM order_items oi JOIN products p ON p.id = oi.product_id WHERE oi.order_id IN (?) ORDER BY oi.order_id';
+          db.query(sql, [ids], (iErr, rows) => {
+            const itemsByOrder = {};
+            if (!iErr && rows) {
+              rows.forEach(r => {
+                if (!itemsByOrder[r.order_id]) itemsByOrder[r.order_id] = [];
+                itemsByOrder[r.order_id].push(r);
+              });
+            }
+            res.render('adminUserOrders', { user: admin, subjectUser, orders, itemsByOrder, messages: req.flash('success'), errors: req.flash('error'), page: safePage, totalPages });
+          });
         });
       });
     });
@@ -62,7 +77,12 @@ module.exports = {
   async undoLastCheckout(req, res) {
     const fs = require('fs');
     const path = require('path');
-    const logFile = path.join(__dirname, '..', 'data', 'checkout_log.json');
+    const os = require('os');
+    const logDir = process.env.CHECKOUT_LOG_DIR
+      || (process.env.NODE_ENV === 'production'
+        ? path.join(__dirname, '..', 'data')
+        : path.join(os.tmpdir(), 'supermarketapp'));
+    const logFile = path.join(logDir, 'checkout_log.json');
     if (!fs.existsSync(logFile)) {
       req.flash('error', 'No checkout history available');
       return res.redirect('/admin');

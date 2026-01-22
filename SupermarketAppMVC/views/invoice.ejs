@@ -46,7 +46,7 @@
   </header>
 
   <section class="invoice-meta">
-    <div class="title">Invoice <span class="muted">#<%= order.id %></span></div>
+    <div class="title">Invoice <span class="muted">#<%= typeof displayOrderNumber !== 'undefined' ? displayOrderNumber : order.id %></span></div>
     <div class="meta-grid">
       <div>
         <div class="label">Billed To</div>
@@ -57,8 +57,8 @@
       <div class="text-end">
         <div class="label">Date</div>
         <div class="value"><%= new Date(order.created_at || order.createdAt).toLocaleString() %></div>
-        <div class="label mt-2">Order ID</div>
-        <div class="value"><%= order.id %></div>
+        <div class="label mt-2">Order #</div>
+        <div class="value"><%= typeof displayOrderNumber !== 'undefined' ? displayOrderNumber : order.id %></div>
       </div>
     </div>
   </section>

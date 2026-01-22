@@ -71,7 +71,7 @@
               <label for="qty" class="form-label">Select quantity</label>
               <div class="input-group mb-3" style="max-width:220px;">
                 <input type="number" name="quantity" id="qty" class="form-control" min="1" max="<%= product.quantity %>" value="1" required>
-                <button class="btn btn-primary" type="submit">&#128722; Add</button>
+                <button class="btn btn-primary" type="submit"><span class="btn-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="9" cy="19" r="1.5"></circle><circle cx="17" cy="19" r="1.5"></circle><path d="M5 6h16l-2 9H7L5 6z"></path><path d="M5 6L4 3H2"></path></svg></span>Add</button>
               </div>
               <div id="qtyError" class="text-danger small" style="display:none;">Not enough stock.</div>
             </form>

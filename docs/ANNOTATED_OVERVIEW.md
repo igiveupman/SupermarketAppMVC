@@ -37,3 +37,17 @@ This document is a guided tour of the codebase with commentary on purpose, data 
 ## Pagination
 - Simple in-memory `.slice()` with `pageSize=10`. For large datasets move to SQL LIMIT/OFFSET.
 
+## Reviews
+- Purpose: Let users post ratings and comments on products to inform others and improve discovery.
+- Data model: Table `reviews` with columns `(id, product_id, user_id, rating INT 1-5, comment TEXT, created_at TIMESTAMP)`. Foreign keys to `products` and `users`.
+- Controllers & routes:
+	- `ProductController.show` loads product details plus aggregated review stats (average rating, count) and recent reviews.
+	- `ReviewController.create` handles POST `/products/:id/reviews` (auth required). Validates rating 1–5, sanitizes comment, and inserts.
+	- Optional `ReviewController.delete` for admins/moderators to remove inappropriate reviews.
+- Views:
+	- `views/product.ejs` displays average rating (stars) and a list of reviews; shows a form to add a review if logged in.
+	- `views/partials/productCard.ejs` may show a compact star rating next to the price.
+- UI/UX:
+	- Prevent duplicate rapid submissions; show success/error flash messages.
+	- Basic moderation cues and report link (future work).
+

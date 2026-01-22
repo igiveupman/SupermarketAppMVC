@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Payment Invoice</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+  <%- include('partials/navbar') %>
+  <main class="container my-5">
+    <h2>Payment Invoice</h2>
+    <p>Thank you for your payment, <%= user ? user.name : 'User' %>!</p>
+    <table class="table table-bordered">
+      <thead>
+        <tr>
+          <th>Fine Type</th>
+          <th>Description</th>
+          <th>Amount</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% let total = 0; fines.forEach(fine => { total += Number(fine.amount); %>
+          <tr>
+            <td><%= fine.typeName || '-' %></td>
+            <td><%= fine.description %></td>
+            <td>$<%= Number(fine.amount).toFixed(2) %></td>
+          </tr>
+        <% }) %>
+      </tbody>
+      <tfoot>
+        <tr>
+          <td colspan="2" class="text-end"><strong>Total Paid</strong></td>
+          <td><strong>$<%= Number(total).toFixed(2)  %></strong></td>
+        </tr>
+      </tfoot>
+    </table>
+    <a href="/" class="btn btn-primary">Back to Home</a>
+  </main>
+  <%- include('partials/footer') %>
+</body>
+</html>

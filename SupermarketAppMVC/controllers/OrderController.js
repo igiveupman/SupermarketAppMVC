@@ -11,27 +11,41 @@ module.exports = {
   index(req, res) {
     const user = req.session.user;
     if (!user) return res.redirect('/login');
-    // fetch orders for user
-    Order.listByUser(user.id, (err, orders) => {
-      if (err) {
+    const pageSize = 5;
+    const page = Math.max(1, parseInt(req.query.page || '1', 10) || 1);
+    const offset = (page - 1) * pageSize;
+    Order.countByUser(user.id, (cErr, totalCount) => {
+      if (cErr) {
         req.flash('error','Failed to load orders');
-        return res.render('orders', { user, orders: [], itemsByOrder: {}, messages: req.flash('success'), errors: req.flash('error') });
+        return res.render('orders', { user, orders: [], itemsByOrder: {}, messages: req.flash('success'), errors: req.flash('error'), page: 1, totalPages: 1 });
       }
-      if (!orders.length) {
-        return res.render('orders', { user, orders: [], itemsByOrder: {}, messages: req.flash('success'), errors: req.flash('error') });
-      }
-      // Fetch items for these orders (join with products to get names)
-      const ids = orders.map(o => o.id);
-      const sql = 'SELECT oi.order_id, oi.product_id, oi.quantity, oi.price, p.productName FROM order_items oi JOIN products p ON p.id = oi.product_id WHERE oi.order_id IN (?) ORDER BY oi.order_id';
-      db.query(sql, [ids], (iErr, rows) => {
-        const itemsByOrder = {};
-        if (!iErr && rows) {
-          rows.forEach(r => {
-            if (!itemsByOrder[r.order_id]) itemsByOrder[r.order_id] = [];
-            itemsByOrder[r.order_id].push(r);
-          });
+      const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
+      const safePage = Math.min(page, totalPages);
+      const safeOffset = (safePage - 1) * pageSize;
+      Order.listByUserPaged(user.id, pageSize, safeOffset, (err, orders) => {
+        if (err) {
+          req.flash('error','Failed to load orders');
+          return res.render('orders', { user, orders: [], itemsByOrder: {}, messages: req.flash('success'), errors: req.flash('error'), page: safePage, totalPages });
         }
-        res.render('orders', { user, orders, itemsByOrder, messages: req.flash('success'), errors: req.flash('error') });
+        if (!orders.length) {
+          return res.render('orders', { user, orders: [], itemsByOrder: {}, messages: req.flash('success'), errors: req.flash('error'), page: safePage, totalPages });
+        }
+        orders.forEach((o, idx) => {
+          o.displayNumber = totalCount - (safeOffset + idx);
+        });
+        // Fetch items for these orders (join with products to get names)
+        const ids = orders.map(o => o.id);
+        const sql = 'SELECT oi.order_id, oi.product_id, oi.quantity, oi.price, p.productName FROM order_items oi JOIN products p ON p.id = oi.product_id WHERE oi.order_id IN (?) ORDER BY oi.order_id';
+        db.query(sql, [ids], (iErr, rows) => {
+          const itemsByOrder = {};
+          if (!iErr && rows) {
+            rows.forEach(r => {
+              if (!itemsByOrder[r.order_id]) itemsByOrder[r.order_id] = [];
+              itemsByOrder[r.order_id].push(r);
+            });
+          }
+          res.render('orders', { user, orders, itemsByOrder, messages: req.flash('success'), errors: req.flash('error'), page: safePage, totalPages });
+        });
       });
     });
   },
@@ -48,12 +62,17 @@ module.exports = {
       const sql = 'SELECT oi.product_id, oi.quantity, oi.price, p.productName FROM order_items oi JOIN products p ON p.id = oi.product_id WHERE oi.order_id = ?';
       db.query(sql, [orderId], (iErr, items) => {
         if (iErr) return res.status(500).send('Server error');
-        // Calculate totals (subtotal + 8% GST)
-        const subtotal = items.reduce((s, it) => s + (it.price * it.quantity), 0);
-        const taxRate = 0.08; // 8% sample GST
-        const tax = +(subtotal * taxRate).toFixed(2);
-        const total = +(subtotal + tax).toFixed(2);
-        res.render('invoice', { user, order, items, subtotal: +subtotal.toFixed(2), tax, total });
+        Order.listByUser(user.id, (lErr, orders) => {
+          if (lErr) return res.status(500).send('Server error');
+          const index = orders.findIndex(o => o.id === order.id);
+          const displayOrderNumber = index >= 0 ? (orders.length - index) : order.id;
+          // Calculate totals (subtotal + 8% GST)
+          const subtotal = items.reduce((s, it) => s + (it.price * it.quantity), 0);
+          const taxRate = 0.08; // 8% sample GST
+          const tax = +(subtotal * taxRate).toFixed(2);
+          const total = +(subtotal + tax).toFixed(2);
+          res.render('invoice', { user, order, items, subtotal: +subtotal.toFixed(2), tax, total, displayOrderNumber });
+        });
       });
     });
   }

@@ -24,25 +24,27 @@
   <ul class="nav-links">
       <% if (user) { %>
         <% if (user.role === 'admin') { %>
-          <li><a class="nav-link <%= __page === 'inventory' ? 'active' : '' %>" href="/inventory"><span class="nav-icon">&#128230;</span>Inventory</a></li>
-          <li><a class="nav-link <%= __page === 'addProduct' ? 'active' : '' %>" href="/addProduct"><span class="nav-icon">&#10133;</span>Add Product</a></li>
-          <li><a class="nav-link <%= __page === 'adminUsers' ? 'active' : '' %>" href="/admin/users"><span class="nav-icon">&#128101;</span>Manage Users</a></li>
+          <li><a class="nav-link <%= __page === 'adminDashboard' ? 'active' : '' %>" href="/admin"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 10l9-6 9 6"></path><path d="M5 10v9h14v-9"></path><path d="M9 19v-6h6v6"></path></svg></span>Home</a></li>
+          <li><a class="nav-link <%= __page === 'inventory' ? 'active' : '' %>" href="/inventory"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 7l9-4 9 4-9 4-9-4z"></path><path d="M3 7v10l9 4 9-4V7"></path><path d="M12 11v10"></path></svg></span>Inventory</a></li>
+          <li><a class="nav-link <%= __page === 'addProduct' ? 'active' : '' %>" href="/addProduct"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 5v14"></path><path d="M5 12h14"></path></svg></span>Add Product</a></li>
+          <li><a class="nav-link <%= __page === 'adminUsers' ? 'active' : '' %>" href="/admin/users"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M16 11a4 4 0 1 0-8 0"></path><path d="M4 20a8 8 0 0 1 16 0"></path><circle cx="12" cy="7" r="3"></circle></svg></span>Manage Users</a></li>
         <% } else { %>
-          <li><a class="nav-link <%= __page === 'shopping' ? 'active' : '' %>" href="/shopping"><span class="nav-icon">&#127828;</span>Shop</a></li>
-          <li><a class="nav-link <%= __page === 'cart' ? 'active' : '' %>" href="/cart"><span class="nav-icon">&#128722;</span>Cart <span class="cart-badge" data-cart-count><%= typeof cartCount !== 'undefined' ? cartCount : ((typeof cart !== 'undefined' && cart && cart.length) ? cart.reduce((s,i)=> s + i.quantity,0) : 0) %></span></a></li>
-          <li><a class="nav-link <%= __page === 'favorites' ? 'active' : '' %>" href="/favorites"><span class="nav-icon">&#10084;&#65039;</span>Favourites</a></li>
-          <li><a class="nav-link <%= __page === 'orders' ? 'active' : '' %>" href="/orders"><span class="nav-icon">&#128179;</span>Orders</a></li>
+          <li><a class="nav-link <%= __page === 'shopping' ? 'active' : '' %>" href="/shopping"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6 7h12l-1 10H7L6 7z"></path><path d="M9 7a3 3 0 1 1 6 0"></path><path d="M8 21h8"></path></svg></span>Shop</a></li>
+          <li><a class="nav-link <%= __page === 'cart' ? 'active' : '' %>" href="/cart"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="9" cy="19" r="1.5"></circle><circle cx="17" cy="19" r="1.5"></circle><path d="M5 6h16l-2 9H7L5 6z"></path><path d="M5 6L4 3H2"></path></svg></span>Cart <span class="cart-badge" data-cart-count><%= typeof cartCount !== 'undefined' ? cartCount : ((typeof cart !== 'undefined' && cart && cart.length) ? cart.reduce((s,i)=> s + i.quantity,0) : 0) %></span></a></li>
+          <li><a class="nav-link <%= __page === 'favorites' ? 'active' : '' %>" href="/favorites"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 20s-7-4.4-9-8.5C1.5 8 3.5 5 7 5c2 0 3.5 1.2 5 3 1.5-1.8 3-3 5-3 3.5 0 5.5 3 4 6.5-2 4.1-9 8.5-9 8.5z"></path></svg></span>Favourites</a></li>
+          <li><a class="nav-link <%= __page === 'subscription' ? 'active' : '' %>" href="/subscription"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3l2.4 4.9 5.4.8-3.9 3.8.9 5.4L12 15.8 7.2 18.9l.9-5.4L4.2 8.7l5.4-.8L12 3z"></path></svg></span>Subscriptions</a></li>
+          <li><a class="nav-link <%= __page === 'orders' ? 'active' : '' %>" href="/orders"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 3h10v18l-5-3-5 3V3z"></path><path d="M9 8h6"></path><path d="M9 12h6"></path></svg></span>Orders</a></li>
         <% } %>
       <% } %>
     </ul>
   <% /* Right-side actions: login/register or user greeting + logout */ %>
   <div class="nav-actions">
       <% if (!user) { %>
-        <a href="/login" class="nav-cta">Login</a>
-        <a href="/register" class="nav-cta alt">Register</a>
+        <a href="/login" class="nav-cta"><span class="cta-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3a5 5 0 0 1 5 5v2"></path><path d="M7 10V8a5 5 0 0 1 10 0v2"></path><rect x="5" y="10" width="14" height="9" rx="2"></rect></svg></span>Login</a>
+        <a href="/register" class="nav-cta alt"><span class="cta-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 5v14"></path><path d="M5 12h14"></path><circle cx="12" cy="12" r="9"></circle></svg></span>Register</a>
       <% } else { %>
         <span class="nav-user">Hi, <strong><%= user.username %></strong></span>
-        <a href="/logout" class="nav-cta">Logout</a>
+        <a href="/logout" class="nav-cta"><span class="cta-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M10 5h6a3 3 0 0 1 3 3v8a3 3 0 0 1-3 3h-6"></path><path d="M14 12H4"></path><path d="M8 8l-4 4 4 4"></path></svg></span>Logout</a>
       <% } %>
     </div>
   </div>

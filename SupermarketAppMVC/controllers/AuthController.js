@@ -46,7 +46,7 @@ module.exports = {
                   }
                   existingErrors.filter(e => e !== msg).forEach(e => req.flash('error', e));
                 }
-                return res.redirect('/');
+                return res.redirect('/admin');
               });
             } else {
               return res.redirect('/');

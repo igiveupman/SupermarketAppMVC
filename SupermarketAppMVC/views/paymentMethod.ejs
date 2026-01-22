@@ -1,54 +1,63 @@
-<% /* Payment method page: choose PayNow or card; submits to /purchase which triggers checkout */ %>
+<% /* Payment method page: choose Stripe card, PayNow, NETS, or PayPal; submits to /purchase which triggers checkout */ %>
 <%- include('partials/header', { user, pageTitle: 'Payment', currentPage: 'cart' }) %>
 <h2 class="mb-3">Purchase</h2>
 <p class="text-muted mb-4">Select a payment method and confirm your purchase.</p>
 <% if (cart && cart.length) { %>
   <h5 class="mb-3">Order Summary</h5>
   <ul class="list-group mb-4">
-    <% let total = 0; cart.forEach(i => { total += i.price * i.quantity; %>
-      <li class="list-group-item d-flex justify-content-between"><span><%= i.productName %> x <%= i.quantity %></span><span>$<%= (i.price * i.quantity).toFixed(2) %></span></li>
+    <% cart.forEach(i => { %>
+      <li class="list-group-item d-flex justify-content-between"><span><%= i.productName %> x <%= i.quantity %></span><span>$<%= Number(i.lineTotal).toFixed(2) %></span></li>
     <% }) %>
-    <li class="list-group-item d-flex justify-content-between fw-semibold"><span>Total</span><span>$<%= total.toFixed(2) %></span></li>
+    <li class="list-group-item d-flex justify-content-between"><span>Subtotal</span><span>$<%= pricing.subtotal.toFixed(2) %></span></li>
+    <% if (pricing.discountAmount > 0) { %>
+      <li class="list-group-item d-flex justify-content-between text-success"><span>Member discount</span><span>-$<%= pricing.discountAmount.toFixed(2) %></span></li>
+    <% } %>
+    <li class="list-group-item d-flex justify-content-between"><span>Delivery fee</span><span>$<%= pricing.deliveryFee.toFixed(2) %></span></li>
+    <li class="list-group-item d-flex justify-content-between fw-semibold"><span>Total</span><span>$<%= pricing.total.toFixed(2) %></span></li>
   </ul>
 <% } %>
+<script src="https://www.paypal.com/sdk/js?client-id=<%= process.env.PAYPAL_CLIENT_ID %>&currency=SGD"></script>
+<script src="https://js.stripe.com/v3/"></script>
 <form action="/purchase" method="POST" class="payment-form" id="paymentForm">
   <div class="mb-3">
     <label class="form-label fw-semibold">Payment Method</label>
     <div class="d-flex flex-wrap gap-3">
       <div class="form-check">
-        <input class="form-check-input" type="radio" name="method" id="methodCard" value="card" checked>
-        <label class="form-check-label" for="methodCard">Credit / Debit Card</label>
+        <input class="form-check-input" type="radio" name="method" id="methodStripe" value="stripe" checked>
+        <label class="form-check-label" for="methodStripe">Card (Stripe)</label>
       </div>
       <div class="form-check">
         <input class="form-check-input" type="radio" name="method" id="methodPayNow" value="paynow">
         <label class="form-check-label" for="methodPayNow">PayNow</label>
       </div>
-    </div>
-  </div>
-  <div id="cardFields" class="card-fields">
-    <div class="row g-3 mb-3">
-      <div class="col-md-6">
-        <label class="form-label">Card Number</label>
-        <input type="text" name="card_number" class="form-control" maxlength="19" placeholder="xxxx xxxx xxxx xxxx" />
+      <div class="form-check">
+        <input class="form-check-input" type="radio" name="method" id="methodNETS" value="nets">
+        <label class="form-check-label" for="methodNETS">NETS</label>
       </div>
-      <div class="col-md-3">
-        <label class="form-label">Expiry (MM/YY)</label>
-        <input type="text" name="expiry" class="form-control" maxlength="5" placeholder="MM/YY" />
-      </div>
-      <div class="col-md-3">
-        <label class="form-label">CVV</label>
-        <input type="password" name="cvv" class="form-control" maxlength="4" placeholder="123" />
+      <div class="form-check">
+        <input class="form-check-input" type="radio" name="method" id="methodPayPal" value="paypal">
+        <label class="form-check-label" for="methodPayPal">PayPal</label>
       </div>
     </div>
   </div>
-  <div id="paynowFields" class="paynow-fields mb-3" style="display:none;">
-    <p class="small text-muted mb-2">Scan the QR code below.</p>
-    <img src="/images/qr.png" alt="PayNow QR Code" style="width:220px; height:auto; border:1px solid #e2e8f0; padding:10px; background:#fff; border-radius:12px; box-shadow:0 4px 12px rgba(0,0,0,.08);" />
+  <div id="stripeSection" class="border rounded p-3 mb-3 wallet-section" data-method="stripe" style="background:#fff;">
+    <div class="mb-2 fw-semibold">Card Details</div>
+    <div id="stripe-card-element" class="border rounded p-2 bg-white"></div>
+    <div class="small text-muted mt-2">Payments are processed securely by Stripe.</div>
   </div>
-  <div id="paynowSection" class="border rounded p-3 mb-3" style="display:none; background:#fff;">
-    <p class="mb-2 fw-semibold">Scan the PayNow QR code below with your banking app to complete payment.</p>
+  <div id="paynowSection" class="border rounded p-3 mb-3 wallet-section" data-method="paynow" style="display:none; background:#fff;">
+    <p class="mb-2 fw-semibold">Scan the PayNow QR code with your banking app to complete payment.</p>
     <img src="/images/qr.png" alt="PayNow QR Code" style="max-width:220px; width:100%; border:1px solid #e2e8f0; border-radius:12px; padding:10px; background:#f8fafc;" />
     <p class="small text-muted mt-2">After paying, click Confirm Payment to finalize your order.</p>
+  </div>
+  <div id="netsSection" class="border rounded p-3 mb-3 wallet-section" data-method="nets" style="display:none; background:#fff;">
+    <p class="mb-2 fw-semibold">NETS QR will be generated after you click Confirm Payment.</p>
+    <p class="small text-muted mb-0">You will be redirected to a NETS QR page to scan and complete payment.</p>
+  </div>
+  <div id="paypalSection" class="border rounded p-3 mb-3 wallet-section" data-method="paypal" style="display:none; background:#fff;">
+    <p class="mb-2 fw-semibold">Pay with PayPal</p>
+    <p class="small text-muted">Complete payment using your PayPal account.</p>
+    <div id="paypal-button-container"></div>
   </div>
   <div class="mb-3">
     <label class="form-label fw-semibold">Delivery Information</label>
@@ -64,29 +73,134 @@
     </div>
     <p class="small text-muted mt-2">We will use this address to deliver your items. Please verify or update if needed.</p>
   </div>
-  <button type="submit" class="btn btn-primary">Confirm Payment</button>
-  <a href="/cart" class="btn btn-outline ms-2">Back to Cart</a>
+  <input type="hidden" name="payment_intent" id="stripePaymentIntent" value="" />
+  <button type="submit" class="btn btn-primary" id="confirmPaymentBtn"><span class="btn-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12l4 4 10-10"></path></svg></span>Confirm Payment</button>
+  <a href="/cart" class="btn btn-outline ms-2"><span class="btn-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M14 6l-6 6 6 6"></path></svg></span>Back to Cart</a>
 </form>
 <script>
   (function(){
-    const cardRadio = document.getElementById('methodCard');
+    const stripeRadio = document.getElementById('methodStripe');
     const paynowRadio = document.getElementById('methodPayNow');
-    const cardFields = document.getElementById('cardFields');
-  const paynowFields = document.getElementById('paynowFields');
+    const netsRadio = document.getElementById('methodNETS');
+    const paypalRadio = document.getElementById('methodPayPal');
+    const walletSections = document.querySelectorAll('.wallet-section');
+    const confirmBtn = document.getElementById('confirmPaymentBtn');
+    const paypalContainer = document.getElementById('paypal-button-container');
+    const stripeKey = "<%= process.env.STRIPE_PUBLISHABLE_KEY || '' %>";
+    const stripeIntentInput = document.getElementById('stripePaymentIntent');
+    const paymentForm = document.getElementById('paymentForm');
+    let stripeInstance;
+    let stripeCard;
+    let paypalRendered = false;
+    const orderTotal = "<%= pricing.total.toFixed(2) %>";
+
+    if (stripeKey) {
+      stripeInstance = Stripe(stripeKey);
+      const elements = stripeInstance.elements();
+      stripeCard = elements.create('card', { hidePostalCode: true });
+      stripeCard.mount('#stripe-card-element');
+    } else {
+      stripeRadio.disabled = true;
+      stripeRadio.checked = false;
+      paynowRadio.checked = true;
+      document.getElementById('stripeSection').innerHTML = '<div class="text-danger small">Stripe is not configured.</div>';
+    }
+
+    function renderPaypalButtons() {
+      if (paypalRendered || !window.paypal || !paypalContainer) return;
+      paypalRendered = true;
+      paypal.Buttons({
+        createOrder: function () {
+          return fetch('/api/paypal/create-order', {
+            method: 'post',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ amount: orderTotal })
+          })
+          .then(res => res.json())
+          .then(data => data.id);
+        },
+        onApprove: function (data) {
+          const deliveryAddress = document.querySelector('input[name="delivery_address"]').value || '';
+          const deliveryContact = document.querySelector('input[name="delivery_contact"]').value || '';
+          if (!deliveryAddress.trim()) {
+            alert('Please provide a delivery address.');
+            return;
+          }
+          return fetch('/api/paypal/capture-order', {
+            method: 'post',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ orderID: data.orderID, delivery_address: deliveryAddress, delivery_contact: deliveryContact })
+          })
+          .then(res => res.json())
+          .then(details => {
+            if (details && details.success && details.redirect) {
+              window.location.href = details.redirect;
+            } else {
+              alert('Payment not completed.');
+            }
+          });
+        }
+      }).render('#paypal-button-container');
+    }
+
     function sync(){
-      if(paynowRadio.checked){
-    cardFields.style.display='none';
-    paynowFields.style.display='block';
-    cardFields.querySelectorAll('input').forEach(i=> i.removeAttribute('required'));
+      const method = paynowRadio.checked ? 'paynow' : (netsRadio.checked ? 'nets' : (paypalRadio.checked ? 'paypal' : 'stripe'));
+      walletSections.forEach(section => {
+        section.style.display = section.dataset.method === method ? 'block' : 'none';
+      });
+      if (method === 'paypal') {
+        confirmBtn.style.display = 'none';
+        renderPaypalButtons();
       } else {
-        cardFields.style.display='block';
-    paynowFields.style.display='none';
-        cardFields.querySelectorAll('input').forEach(i=> i.setAttribute('required','required'));
+        confirmBtn.style.display = 'inline-block';
       }
     }
-    cardRadio.addEventListener('change', sync);
+    stripeRadio.addEventListener('change', sync);
     paynowRadio.addEventListener('change', sync);
+    netsRadio.addEventListener('change', sync);
+    paypalRadio.addEventListener('change', sync);
     sync();
+
+    paymentForm.addEventListener('submit', async (event) => {
+      const useStripe = stripeRadio.checked;
+      if (!useStripe) return;
+      event.preventDefault();
+      if (!stripeInstance || !stripeCard) {
+        alert('Stripe is not configured.');
+        return;
+      }
+      const deliveryAddress = document.querySelector('input[name="delivery_address"]').value || '';
+      if (!deliveryAddress.trim()) {
+        alert('Please provide a delivery address.');
+        return;
+      }
+      confirmBtn.disabled = true;
+      try {
+        const intentRes = await fetch('/api/stripe/order-intent', { method: 'post' });
+        const intentData = await intentRes.json();
+        if (!intentData.clientSecret) {
+          alert(intentData.message || intentData.error || 'Unable to start Stripe payment.');
+          confirmBtn.disabled = false;
+          return;
+        }
+        const result = await stripeInstance.confirmCardPayment(intentData.clientSecret, {
+          payment_method: { card: stripeCard }
+        });
+        if (result.error) {
+          alert(result.error.message || 'Stripe payment failed.');
+          confirmBtn.disabled = false;
+          return;
+        }
+        if (result.paymentIntent && result.paymentIntent.status === 'succeeded') {
+          stripeIntentInput.value = result.paymentIntent.id;
+          paymentForm.action = '/stripe/order/complete';
+          paymentForm.submit();
+        }
+      } catch (err) {
+        alert('Stripe payment failed.');
+        confirmBtn.disabled = false;
+      }
+    });
   })();
 </script>
 <%- include('partials/footer') %>

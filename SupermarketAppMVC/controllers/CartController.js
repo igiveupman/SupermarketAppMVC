@@ -2,6 +2,8 @@
 const Product = require('../models/Product');
 const Order = require('../models/Order');
 const db = require('../db');
+const netsQr = require('../services/nets');
+const { computeCartPricing } = require('../services/subscriptionPricing');
 
 // Helper: adjust product quantity in DB by delta (can be positive to restock or negative to reserve)
 function adjustStock(productId, delta) {
@@ -87,14 +89,16 @@ function clearCartDb(userId) {
 module.exports = {
   // Show current items in the user's cart
   viewCart(req, res) {
-  const cart = req.session.cart || [];
-  res.render('cart', { cart, user: req.session.user, messages: req.flash('success'), errors: req.flash('error') });
+    const cart = req.session.cart || [];
+    const pricing = computeCartPricing(cart, req.session.user);
+    res.render('cart', { cart: pricing.items, pricing, user: req.session.user, messages: req.flash('success'), errors: req.flash('error') });
   },
-  // Render payment method selection (dummy PayNow or card)
+  // Render payment method selection (dummy methods: PayNow, NETS, GrabPay, card)
   paymentForm(req, res) {
     const cart = req.session.cart || [];
     if (!cart.length) { req.flash('error', 'Your cart is empty.'); return res.redirect('/cart'); }
-    res.render('paymentMethod', { cart, user: req.session.user, messages: req.flash('success'), errors: req.flash('error') });
+    const pricing = computeCartPricing(cart, req.session.user);
+    res.render('paymentMethod', { cart: pricing.items, pricing, user: req.session.user, messages: req.flash('success'), errors: req.flash('error') });
   },
 
   // Add a product to the session cart via traditional form submit
@@ -276,19 +280,24 @@ module.exports = {
       .then((products) => {
         // Recompute totals and item prices from latest DB values
         const priceMap = new Map(products.map(p => [p.id, p]));
-        const orderItems = cart.map(i => {
+        const cartForPricing = cart.map((i) => {
           const prod = priceMap.get(i.productId);
           const price = prod && prod.discount_price ? parseFloat(prod.discount_price) : parseFloat(prod.price);
           return { productId: i.productId, quantity: i.quantity, price };
         });
-        const total = orderItems.reduce((sum,i)=> sum + (i.price * i.quantity), 0);
+        const pricing = computeCartPricing(cartForPricing, req.session.user);
+        const orderItems = pricing.items.map((i) => ({
+          productId: i.productId,
+          quantity: i.quantity,
+          price: i.effectivePrice
+        }));
         Order.create({
           user_id: req.session.user.id,
-          total: total.toFixed(2),
-            delivery_method: req.session.payment_method || 'card',
+          total: pricing.total.toFixed(2),
+          delivery_method: req.session.payment_method || 'card',
           delivery_address: req.session.checkout_address || '',
-          delivery_fee: '0.00'
-    }, orderItems, (oErr, data) => {
+          delivery_fee: pricing.deliveryFee.toFixed(2)
+        }, orderItems, (oErr, data) => {
           if (oErr) {
             console.error('Order log failed:', oErr);
           } else {
@@ -301,7 +310,11 @@ module.exports = {
         try {
           const fs = require('fs');
           const path = require('path');
-          const logDir = path.join(__dirname, '..', 'data');
+          const os = require('os');
+          const logDir = process.env.CHECKOUT_LOG_DIR
+            || (process.env.NODE_ENV === 'production'
+              ? path.join(__dirname, '..', 'data')
+              : path.join(os.tmpdir(), 'supermarketapp'));
           const logFile = path.join(logDir, 'checkout_log.json');
           if (!fs.existsSync(logDir)) fs.mkdirSync(logDir);
           let entries = [];
@@ -318,10 +331,14 @@ module.exports = {
         // clear cart and redirect
         req.session.cart = [];
         clearCartDb(req.session.user.id).catch(()=>{});
-        // If coming from payment page, show success screen, else redirect
-        if (req.path === '/purchase') {
+        // If coming from payment page or NETS flow, show success screen, else redirect
+        if (req.path === '/purchase' || req.session.payment_flow === 'nets' || req.session.payment_flow === 'paypal' || req.session.payment_flow === 'stripe') {
+          req.session.payment_flow = null;
           const successMsg = 'Payment successful. Delivery to: ' + (req.session.checkout_address || 'N/A');
-          return res.render('paymentSuccess', { user: req.session.user, messages: [successMsg], errors: [], lastOrderId: req.session.lastOrderId });
+          // Ensure session persists before rendering success screen.
+          return req.session.save(() => {
+            res.render('paymentSuccess', { user: req.session.user, messages: [successMsg], errors: [], lastOrderId: req.session.lastOrderId });
+          });
         }
         req.flash('success', 'Order placed successfully.');
         res.redirect('/shopping');
@@ -335,19 +352,14 @@ module.exports = {
   // Simulate processing payment, validate delivery info, then reuse checkout flow
   paymentProcess(req, res) {
   const { method, card_number, expiry, cvv, delivery_address, delivery_contact } = req.body; // removed card_name (simulation)
-    if (!method) {
+    const allowedMethods = new Set(['stripe', 'paynow', 'nets', 'paypal']);
+    if (!method || !allowedMethods.has(method)) {
       req.flash('error', 'Select a payment method.');
       return res.redirect('/purchase');
     }
-    if (method !== 'paynow') {
-      if (!card_number || !expiry || !cvv) {
-        req.flash('error', 'Complete all card details.');
-        return res.redirect('/purchase');
-      }
-      if (card_number.replace(/\s+/g,'').length < 13) {
-        req.flash('error', 'Card number seems too short.');
-        return res.redirect('/purchase');
-      }
+    if (method === 'stripe') {
+      req.flash('error', 'Stripe payment must be confirmed on this page.');
+      return res.redirect('/purchase');
     }
     // Validate delivery info
     if (!delivery_address || !delivery_address.trim()) {
@@ -357,9 +369,15 @@ module.exports = {
     // Persist for use in checkout/order creation and success page
     req.session.checkout_address = delivery_address.trim();
     req.session.checkout_contact = (delivery_contact || '').trim();
-    req.session.payment_method = method === 'paynow' ? 'paynow' : 'card';
+    req.session.payment_method = method;
 
-  // PayNow method is a dummy; no extra flash message
+    // NETS QR uses a separate flow; generate QR and wait for success callback
+    if (method === 'nets') {
+      req.session.payment_flow = 'nets';
+      return netsQr.generateQrCode(req, res);
+    }
+
+    // Dummy methods (PayNow) skip extra validation
     // Reuse checkout logic (path check will render success page)
     module.exports.checkout(req, res);
   },
@@ -384,10 +402,10 @@ module.exports.apiCheckout = function(req, res) {
   });
   Promise.all(cart.map(processItem))
     .then(() => {
-      const total = cart.reduce((sum, i) => sum + i.price * i.quantity, 0);
+      const pricing = computeCartPricing(cart, req.session.user);
       req.session.cart = [];
       clearCartDb(req.session.user.id).catch(()=>{});
-      res.json({ success:true, message:'Checkout complete', total: total.toFixed(2), items: results });
+      res.json({ success:true, message:'Checkout complete', total: pricing.total.toFixed(2), items: results });
     })
     .catch(err => {
       res.status(400).json({ success:false, error: err.message || 'Checkout failed' });

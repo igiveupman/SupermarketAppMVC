@@ -41,7 +41,7 @@ CREATE TABLE `products` (
 
 LOCK TABLES `products` WRITE;
 /*!40000 ALTER TABLE `products` DISABLE KEYS */;
-INSERT INTO `products` VALUES (1,'Apples',47,1.50,'apples.png','Produce',0,NULL),(2,'Bananas',99,0.80,'bananas.png','Produce',0,NULL),(3,'Milk',50,3.50,'milk.png','Dairy',0,NULL),(4,'Bread',80,1.80,'bread.png','Bakery',1,NULL),(14,'Tomatoes',80,1.50,'tomatoes.png','Produce',0,NULL),(19,'Broccoli',50,5.00,'Broccoli.png','Produce',0,NULL),(21,'Chicken Breast',95,4.00,'chicken breast.jpg','Meats',0,NULL),(22,'Mangoes',40,3.00,'mangoes.jpg','Produce',0,NULL),(23,'Cheese',50,5.00,'cheese.jpg','Dairy',0,NULL),(24,'Beef Steak',60,10.00,'beef.jpg','Meats',0,9.00);
+INSERT INTO `products` VALUES (1,'Apples',50,1.50,'apples.png','Produce',1,NULL),(2,'Bananas',100,0.80,'bananas.png','Produce',0,NULL),(3,'Milk',50,3.50,'milk.png','Dairy',0,NULL),(4,'Bread',80,1.80,'bread.png','Bakery',1,1.62),(14,'Tomatoes',80,1.50,'tomatoes.png','Produce',0,1.44),(19,'Broccoli',50,5.00,'Broccoli.png','Produce',0,NULL),(21,'Chicken Breast',100,4.00,'chicken breast.jpg','Meats',0,NULL),(22,'Mangoes',40,3.00,'mangoes.jpg','Produce',0,NULL),(23,'Cheese',50,5.00,'cheese.jpg','Dairy',0,NULL),(24,'Beef Steak',60,10.00,'beef.jpg','Meats',0,9.00);
 /*!40000 ALTER TABLE `products` ENABLE KEYS */;
 UNLOCK TABLES;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
@@ -54,4 +54,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2025-12-03 14:54:04
+-- Dump completed on 2025-12-05 21:44:59

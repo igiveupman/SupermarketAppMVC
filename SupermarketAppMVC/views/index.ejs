@@ -1,76 +1,67 @@
 <% /* Home page: FairPrice-inspired hero and quick actions */ %>
 <%- include('partials/header', { user, pageTitle: 'Home', currentPage: 'home' }) %>
-<header class="hero">
-  <img src="/images/logo.png" alt="UnfairPrice logo" class="hero-logo" />
-  <div class="hero-title-block">
-    <h1 class="hero-title">UnfairPrice</h1>
-    <p class="hero-tagline">A FairPrice-inspired way to shop: blue, red, and ready with fresh daily picks.</p>
+<% if (user && user.role !== 'admin') { %>
+  <section class="user-hero mb-4">
+    <div>
+      <div class="user-eyebrow">Member Portal</div>
+      <h1 class="user-title">Welcome back, <%= user.username %></h1>
+      <p class="muted mb-0">Prices are always unfair and unjust.</p>
+    </div>
+    <div class="user-hero-actions">
+      <a class="btn btn-primary" href="/shopping"><span class="btn-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6 7h12l-1 10H7L6 7z"></path><path d="M9 7a3 3 0 1 1 6 0"></path><path d="M8 21h8"></path></svg></span>Shop</a>
+      <a class="btn btn-primary" href="/cart"><span class="btn-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="9" cy="19" r="1.5"></circle><circle cx="17" cy="19" r="1.5"></circle><path d="M5 6h16l-2 9H7L5 6z"></path><path d="M5 6L4 3H2"></path></svg></span>Cart</a>
+      <a class="btn btn-primary" href="/orders"><span class="btn-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 3h10v18l-5-3-5 3V3z"></path><path d="M9 8h6"></path><path d="M9 12h6"></path></svg></span>Orders</a>
+    </div>
+  </section>
+
+  <div class="user-quick-grid mb-4">
+    <a class="user-quick-card" href="/shopping" aria-label="Start shopping">
+      <div class="quick-icon"><svg viewBox="0 0 24 24"><path d="M6 7h12l-1 10H7L6 7z"></path><path d="M9 7a3 3 0 1 1 6 0"></path><path d="M8 21h8"></path></svg></div>
+      <div>
+        <h4>Shop</h4>
+        <p>Browse fresh categories.</p>
+      </div>
+    </a>
+    <a class="user-quick-card" href="/cart" aria-label="View cart">
+      <div class="quick-icon"><svg viewBox="0 0 24 24"><circle cx="9" cy="19" r="1.5"></circle><circle cx="17" cy="19" r="1.5"></circle><path d="M5 6h16l-2 9H7L5 6z"></path><path d="M5 6L4 3H2"></path></svg></div>
+      <div>
+        <h4>Cart</h4>
+        <p>Review and checkout.</p>
+      </div>
+    </a>
+    <a class="user-quick-card" href="/orders" aria-label="Order history">
+      <div class="quick-icon"><svg viewBox="0 0 24 24"><path d="M7 3h10v18l-5-3-5 3V3z"></path><path d="M9 8h6"></path><path d="M9 12h6"></path></svg></div>
+      <div>
+        <h4>Orders</h4>
+        <p>Track past purchases.</p>
+      </div>
+    </a>
+    <a class="user-quick-card" href="/favorites" aria-label="Favorites">
+      <div class="quick-icon"><svg viewBox="0 0 24 24"><path d="M12 20s-7-4.4-9-8.5C1.5 8 3.5 5 7 5c2 0 3.5 1.2 5 3 1.5-1.8 3-3 5-3 3.5 0 5.5 3 4 6.5-2 4.1-9 8.5-9 8.5z"></path></svg></div>
+      <div>
+        <h4>Favorites</h4>
+        <p>Save go-to picks.</p>
+      </div>
+    </a>
+    <a class="user-quick-card" href="/subscription" aria-label="Subscriptions">
+      <div class="quick-icon"><svg viewBox="0 0 24 24"><path d="M12 3l2.4 4.9 5.4.8-3.9 3.8.9 5.4L12 15.8 7.2 18.9l.9-5.4L4.2 8.7l5.4-.8L12 3z"></path></svg></div>
+      <div>
+        <h4>Subscriptions</h4>
+        <p>Upgrade your benefits.</p>
+      </div>
+    </a>
   </div>
-  <div class="hero-actions">
-    <% if (user) { %>
-      <% if (user.role === 'admin') { %>
-        <div class="action-widgets">
-          <a class="widget" href="/inventory" aria-label="Manage inventory">
-            <div class="widget-icon">&#128230;</div>
-            <div class="widget-body">
-              <h4>Inventory</h4>
-              <p class="muted">View and edit stock.</p>
-            </div>
-          </a>
-          <a class="widget" href="/addProduct" aria-label="Add product">
-            <div class="widget-icon">&#10133;</div>
-            <div class="widget-body">
-              <h4>Add Product</h4>
-              <p class="muted">Create new items fast.</p>
-            </div>
-          </a>
-          <a class="widget" href="/admin/users" aria-label="Manage users">
-            <div class="widget-icon">&#128101;</div>
-            <div class="widget-body">
-              <h4>Users</h4>
-              <p class="muted">Accounts and roles.</p>
-            </div>
-          </a>
-        </div>
-      <% } else { %>
-        <div class="action-widgets">
-          <a class="widget" href="/shopping" aria-label="Start shopping">
-            <div class="widget-icon">&#127828;</div>
-            <div class="widget-body">
-              <h4>Shop</h4>
-              <p class="muted">Browse our aisles.</p>
-            </div>
-          </a>
-
-          <a class="widget" href="/cart" aria-label="View cart">
-            <div class="widget-icon">&#128722;</div>
-            <div class="widget-body">
-              <h4>Cart</h4>
-              <p class="muted">Review and checkout.</p>
-            </div>
-          </a>
-
-          <a class="widget" href="/orders" aria-label="Order history">
-            <div class="widget-icon">&#128179;</div>
-            <div class="widget-body">
-              <h4>Orders</h4>
-              <p class="muted">Past purchases.</p>
-            </div>
-          </a>
-
-          <a class="widget" href="/favorites" aria-label="Favorites">
-            <div class="widget-icon">&#10084;&#65039;</div>
-            <div class="widget-body">
-              <h4>Favorites</h4>
-              <p class="muted">Save go-to picks.</p>
-            </div>
-          </a>
-        </div>
-      <% } %>
-    <% } else { %>
+<% } else { %>
+  <header class="hero">
+    <img src="/images/logo.png" alt="UnfairPrice logo" class="hero-logo" />
+    <div class="hero-title-block">
+      <h1 class="hero-title">UnfairPrice</h1>
+      <p class="hero-tagline">A FairPrice-inspired way to shop: blue, red, and ready with fresh daily picks.</p>
+    </div>
+    <div class="hero-actions">
       <div class="action-widgets">
         <a class="widget" href="/register" aria-label="Create account">
-          <div class="widget-icon">&#128100;</div>
+          <div class="widget-icon"><svg viewBox="0 0 24 24"><path d="M12 5v14"></path><path d="M5 12h14"></path><circle cx="12" cy="12" r="9"></circle></svg></div>
           <div class="widget-body">
             <h4>Register</h4>
             <p class="muted">Join and start shopping.</p>
@@ -78,35 +69,35 @@
         </a>
 
         <a class="widget" href="/login" aria-label="Sign in">
-          <div class="widget-icon">&#128275;</div>
+          <div class="widget-icon"><svg viewBox="0 0 24 24"><path d="M12 3a5 5 0 0 1 5 5v2"></path><path d="M7 10V8a5 5 0 0 1 10 0v2"></path><rect x="5" y="10" width="14" height="9" rx="2"></rect></svg></div>
           <div class="widget-body">
             <h4>Sign In</h4>
             <p class="muted">Access your account.</p>
           </div>
         </a>
       </div>
-    <% } %>
-  </div>
-</header>
+    </div>
+  </header>
+<% } %>
 <% if (!user || user.role !== 'admin') { %>
 <section class="features">
   <div class="feature">
-    <span class="feature-icon">&#127817;</span>
+    <span class="feature-icon"><svg viewBox="0 0 24 24"><path d="M8 7c0-2 2-4 4-4s4 2 4 4"></path><path d="M5 9h14l-1 10H6L5 9z"></path><path d="M9 13h6"></path></svg></span>
     <h3>Fresh Produce</h3>
     <p>Hand-picked fruits and vegetables sourced daily for peak freshness and flavor.</p>
   </div>
   <div class="feature">
-    <span class="feature-icon">&#9889;</span>
+    <span class="feature-icon"><svg viewBox="0 0 24 24"><path d="M13 2L4 14h6l-1 8 9-12h-6l1-8z"></path></svg></span>
     <h3>Quick Checkout</h3>
     <p>Streamlined cart and secure payment process to get you on your way faster.</p>
   </div>
   <div class="feature">
-    <span class="feature-icon">&#10084;&#65039;</span>
+    <span class="feature-icon"><svg viewBox="0 0 24 24"><path d="M12 20s-7-4.4-9-8.5C1.5 8 3.5 5 7 5c2 0 3.5 1.2 5 3 1.5-1.8 3-3 5-3 3.5 0 5.5 3 4 6.5-2 4.1-9 8.5-9 8.5z"></path></svg></span>
     <h3>Favorites</h3>
     <p>Save the items you love and access them instantly next time you shop.</p>
   </div>
   <div class="feature">
-    <span class="feature-icon">&#11088;</span>
+    <span class="feature-icon"><svg viewBox="0 0 24 24"><path d="M12 3l2.4 4.9 5.4.8-3.9 3.8.9 5.4L12 15.8 7.2 18.9l.9-5.4L4.2 8.7l5.4-.8L12 3z"></path></svg></span>
     <h3>Trending Picks</h3>
     <p>See what's hot right now with featured products.</p>
   </div>

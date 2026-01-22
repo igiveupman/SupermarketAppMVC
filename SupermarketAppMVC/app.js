@@ -4,6 +4,7 @@ const path = require('path');
 const envPath = path.join(__dirname, '.env');
 require('dotenv').config({ path: envPath }); // Load environment variables early
 const express = require('express');
+const axios = require('axios');
 const session = require('express-session');
 const flash = require('connect-flash');
 // Multer handles file uploads (used by admin to upload product images)
@@ -77,6 +78,23 @@ connection.query(
     }
 );
 
+// Ensure subscription fields exist on users
+connection.query("ALTER TABLE users ADD COLUMN subscription_tier VARCHAR(20) NOT NULL DEFAULT 'basic'", (sErr) => {
+    if (sErr && sErr.code !== 'ER_DUP_FIELDNAME') {
+        console.error('Failed to ensure subscription_tier column:', sErr.code);
+    }
+});
+connection.query('ALTER TABLE users ADD COLUMN subscription_price DECIMAL(10,2) NOT NULL DEFAULT 0.00', (pErr) => {
+    if (pErr && pErr.code !== 'ER_DUP_FIELDNAME') {
+        console.error('Failed to ensure subscription_price column:', pErr.code);
+    }
+});
+connection.query('ALTER TABLE users ADD COLUMN subscription_started_at DATETIME NULL', (dErr) => {
+    if (dErr && dErr.code !== 'ER_DUP_FIELDNAME') {
+        console.error('Failed to ensure subscription_started_at column:', dErr.code);
+    }
+});
+
 // View engine: EJS templates in /views
 // Set up view engine
 app.set('view engine', 'ejs');
@@ -118,6 +136,8 @@ app.use((req, res, next) => {
     const cart = req.session.cart || [];
     res.locals.cart = cart;
     res.locals.cartCount = cart.reduce((sum,i)=> sum + i.quantity, 0);
+    res.locals.messages = req.flash('success') || [];
+    res.locals.errors = req.flash('error') || [];
     next();
 });
 
@@ -127,12 +147,15 @@ app.use((req, res, next) => {
 const ProductController = require('./controllers/ProductController');
 const ProductModel = require('./models/Product');
 const CartController = require('./controllers/CartController');
+const paypal = require('./services/paypal');
 const FavoriteController = require('./controllers/FavoriteController');
 const Favorite = require('./models/Favorite');
 const UserController = require('./controllers/UserController');
 const adminRouter = require('./routes/adminRouter');
 const OrderController = require('./controllers/OrderController');
 const ReviewController = require('./controllers/ReviewController');
+const SubscriptionController = require('./controllers/SubscriptionController');
+const StripeController = require('./controllers/StripeController');
 // Lazy-load puppeteer for PDF generation
 let puppeteer;
 const AuthController = require('./controllers/AuthController');
@@ -158,6 +181,9 @@ function loginRateLimit(req, res, next) {
 
 // Home page: shows landing or quick links; passes session user + flash messages
 app.get('/',  (req, res) => {
+    if (req.session.user && req.session.user.role === 'admin') {
+        return res.redirect('/admin');
+    }
     res.render('index', { user: req.session.user, messages: req.flash('success') || [], errors: req.flash('error') || [] });
 });
 
@@ -213,6 +239,70 @@ app.post('/api/cart/checkout', checkAuthenticated, CartController.apiCheckout);
 // New purchase flow
 app.get('/purchase', checkAuthenticated, CartController.paymentForm);
 app.post('/purchase', checkAuthenticated, CartController.paymentProcess);
+// PayPal: Create Order
+app.post('/api/paypal/create-order', checkAuthenticated, async (req, res) => {
+    try {
+        const { amount } = req.body;
+        const order = await paypal.createOrder(amount);
+        if (order && order.id) {
+            return res.json({ id: order.id });
+        }
+        return res.status(500).json({ error: 'Failed to create PayPal order', details: order });
+    } catch (err) {
+        return res.status(500).json({ error: 'Failed to create PayPal order', message: err.message });
+    }
+});
+// PayPal: Capture Order and mark session ready for checkout
+app.post('/api/paypal/capture-order', checkAuthenticated, async (req, res) => {
+    try {
+        const { orderID, delivery_address, delivery_contact } = req.body;
+        if (!delivery_address || !delivery_address.trim()) {
+            return res.status(400).json({ error: 'Delivery address is required.' });
+        }
+        const capture = await paypal.captureOrder(orderID);
+        if (capture.status === 'COMPLETED') {
+            req.session.checkout_address = delivery_address.trim();
+            req.session.checkout_contact = (delivery_contact || '').trim();
+            req.session.payment_method = 'paypal';
+            req.session.paypal_captured = true;
+            return res.json({ success: true, redirect: '/paypal/complete' });
+        }
+        return res.status(400).json({ error: 'Payment not completed', details: capture });
+    } catch (err) {
+        return res.status(500).json({ error: 'Failed to capture PayPal order', message: err.message });
+    }
+});
+// PayPal: Complete checkout after capture
+app.get('/paypal/complete', checkAuthenticated, (req, res) => {
+    if (!req.session.paypal_captured) {
+        req.flash('error', 'PayPal payment not captured.');
+        return res.redirect('/purchase');
+    }
+    req.session.paypal_captured = false;
+    req.session.payment_flow = 'paypal';
+    return CartController.checkout(req, res);
+});
+// NETS QR callbacks
+app.get('/nets-qr/success', checkAuthenticated, (req, res) => {
+    if (req.session.subscription_payment_flow === 'nets') {
+        req.session.subscription_payment_flow = null;
+        req.session.subscription_nets_captured = true;
+        return SubscriptionController.complete(req, res);
+    }
+    req.session.payment_flow = 'nets';
+    CartController.checkout(req, res);
+});
+app.get('/nets-qr/fail', checkAuthenticated, (req, res) => {
+    res.render('netsQrFail', {
+        user: req.session.user,
+        pageTitle: 'NETS QR Failed',
+        messages: req.flash('success') || [],
+        errors: req.flash('error') || [],
+        responseCode: 'N.A.',
+        instructions: '',
+        errorMsg: 'Transaction failed. Please try again.'
+    });
+});
 // Orders history page and JSON API
 app.get('/orders', checkAuthenticated, OrderController.index);
 // Printable invoice per order
@@ -284,6 +374,80 @@ app.post('/product/:id/feature', checkAuthenticated, checkAdmin, (req, res) => {
             }
             return res.redirect('/inventory');
         });
+    });
+});
+
+// Subscription tiers
+app.get('/subscription', checkAuthenticated, SubscriptionController.index);
+app.get('/subscription/checkout', checkAuthenticated, SubscriptionController.checkoutForm);
+app.post('/subscription/checkout', checkAuthenticated, SubscriptionController.checkoutProcess);
+app.get('/subscription/complete', checkAuthenticated, SubscriptionController.complete);
+app.post('/subscription/cancel', checkAuthenticated, SubscriptionController.cancel);
+app.post('/api/paypal/subscription/create-order', checkAuthenticated, SubscriptionController.paypalCreateOrder);
+app.post('/api/paypal/subscription/capture-order', checkAuthenticated, SubscriptionController.paypalCaptureOrder);
+
+// Stripe card payments
+app.post('/api/stripe/order-intent', checkAuthenticated, StripeController.createOrderIntent);
+app.post('/stripe/order/complete', checkAuthenticated, StripeController.completeOrder);
+app.post('/api/stripe/subscription-intent', checkAuthenticated, StripeController.createSubscriptionIntent);
+app.post('/stripe/subscription/complete', checkAuthenticated, StripeController.completeSubscription);
+
+// Server-Sent Events endpoint for NETS QR status polling
+app.get('/sse/payment-status/:txnRetrievalRef', checkAuthenticated, async (req, res) => {
+    res.set({
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        'Connection': 'keep-alive'
+    });
+
+    const txnRetrievalRef = req.params.txnRetrievalRef;
+    let pollCount = 0;
+    const maxPolls = 60; // 5 minutes if polling every 5s
+    let frontendTimeoutStatus = 0;
+
+    const interval = setInterval(async () => {
+        pollCount += 1;
+        try {
+            const response = await axios.post(
+                'https://sandbox.nets.openapipaas.com/api/v1/common/payments/nets-qr/query',
+                { txn_retrieval_ref: txnRetrievalRef, frontend_timeout_status: frontendTimeoutStatus },
+                {
+                    headers: {
+                        'api-key': process.env.NETS_API_KEY,
+                        'project-id': process.env.NETS_PROJECT_ID,
+                        'Content-Type': 'application/json'
+                    }
+                }
+            );
+
+            res.write(`data: ${JSON.stringify(response.data)}\n\n`);
+
+            const resData = response.data && response.data.result && response.data.result.data;
+            if (resData && resData.response_code === '00' && resData.txn_status === 1) {
+                res.write(`data: ${JSON.stringify({ success: true })}\n\n`);
+                clearInterval(interval);
+                res.end();
+            } else if (frontendTimeoutStatus === 1 && resData && (resData.response_code !== '00' || resData.txn_status === 2)) {
+                res.write(`data: ${JSON.stringify({ fail: true, ...resData })}\n\n`);
+                clearInterval(interval);
+                res.end();
+            }
+        } catch (err) {
+            clearInterval(interval);
+            res.write(`data: ${JSON.stringify({ error: err.message })}\n\n`);
+            res.end();
+        }
+
+        if (pollCount >= maxPolls) {
+            clearInterval(interval);
+            frontendTimeoutStatus = 1;
+            res.write(`data: ${JSON.stringify({ fail: true, error: 'Timeout' })}\n\n`);
+            res.end();
+        }
+    }, 5000);
+
+    req.on('close', () => {
+        clearInterval(interval);
     });
 });
 app.post('/product/:id/unfeature', checkAuthenticated, checkAdmin, (req, res) => {

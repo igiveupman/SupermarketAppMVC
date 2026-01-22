@@ -1,46 +1,45 @@
-<%- include('partials/header', { user, pageTitle: 'Admin Dashboard', currentPage: 'inventory' }) %>
-<h1 class="mb-3 hero-title">Admin Dashboard</h1>
-<p class="muted mb-4">Welcome, <strong><%= user.username %></strong> <small>(<%= user.role %>)</small></p>
-<div class="action-widgets mb-4">
-  <a class="widget" href="/inventory" aria-label="Manage inventory">
-    <div class="widget-icon">&#128230;</div>
-    <div class="widget-body">
+<%- include('partials/header', { user, pageTitle: 'Admin Dashboard', currentPage: 'adminDashboard' }) %>
+<section class="admin-hero mb-4">
+  <div>
+    <div class="admin-eyebrow">Admin Console</div>
+    <h1 class="admin-title">Dashboard</h1>
+    <p class="muted mb-0">Welcome back, <strong><%= user.username %></strong> · <span class="text-uppercase small"><%= user.role %></span></p>
+  </div>
+  <div class="admin-hero-actions">
+    <a class="btn btn-primary" href="/inventory"><span class="btn-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 7l9-4 9 4-9 4-9-4z"></path><path d="M3 7v10l9 4 9-4V7"></path><path d="M12 11v10"></path></svg></span>Inventory</a>
+    <a class="btn btn-primary" href="/addProduct"><span class="btn-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 5v14"></path><path d="M5 12h14"></path></svg></span>Add Product</a>
+    <a class="btn btn-primary" href="/admin/users"><span class="btn-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M16 11a4 4 0 1 0-8 0"></path><path d="M4 20a8 8 0 0 1 16 0"></path><circle cx="12" cy="7" r="3"></circle></svg></span>Users</a>
+  </div>
+</section>
+
+<div class="admin-quick-grid mb-4">
+  <a class="admin-quick-card" href="/inventory" aria-label="Manage inventory">
+    <div class="quick-icon"><svg viewBox="0 0 24 24"><path d="M3 7l9-4 9 4-9 4-9-4z"></path><path d="M3 7v10l9 4 9-4V7"></path><path d="M12 11v10"></path></svg></div>
+    <div>
       <h4>Inventory</h4>
-      <p class="muted">View and edit stock.</p>
+      <p>Monitor stock and pricing.</p>
     </div>
-    <div class="widget-action">&rarr;</div>
   </a>
-  <a class="widget" href="/addProduct" aria-label="Add product">
-    <div class="widget-icon">&#10133;</div>
-    <div class="widget-body">
+  <a class="admin-quick-card" href="/addProduct" aria-label="Add product">
+    <div class="quick-icon"><svg viewBox="0 0 24 24"><path d="M12 5v14"></path><path d="M5 12h14"></path></svg></div>
+    <div>
       <h4>Add Product</h4>
-      <p class="muted">Create new items.</p>
+      <p>Publish new items fast.</p>
     </div>
-    <div class="widget-action">&rarr;</div>
   </a>
-  <a class="widget" href="/admin/users" aria-label="Manage users">
-    <div class="widget-icon">&#128101;</div>
-    <div class="widget-body">
+  <a class="admin-quick-card" href="/admin/users" aria-label="Manage users">
+    <div class="quick-icon"><svg viewBox="0 0 24 24"><path d="M16 11a4 4 0 1 0-8 0"></path><path d="M4 20a8 8 0 0 1 16 0"></path><circle cx="12" cy="7" r="3"></circle></svg></div>
+    <div>
       <h4>Users</h4>
-      <p class="muted">Roles and accounts.</p>
+      <p>Roles, access, and orders.</p>
     </div>
-    <div class="widget-action">&rarr;</div>
   </a>
-  <a class="widget" href="/admin/users" aria-label="Manage orders">
-    <div class="widget-icon">&#128179;</div>
-    <div class="widget-body">
-      <h4>Manage Orders</h4>
-      <p class="muted">View and clear history.</p>
-    </div>
-    <div class="widget-action">&rarr;</div>
-  </a>
-  <a class="widget" href="/logout" aria-label="Logout">
-    <div class="widget-icon">&#128682;</div>
-    <div class="widget-body">
+  <a class="admin-quick-card" href="/logout" aria-label="Logout">
+    <div class="quick-icon"><svg viewBox="0 0 24 24"><path d="M10 5h6a3 3 0 0 1 3 3v8a3 3 0 0 1-3 3h-6"></path><path d="M14 12H4"></path><path d="M8 8l-4 4 4 4"></path></svg></div>
+    <div>
       <h4>Logout</h4>
-      <p class="muted">Sign out securely.</p>
+      <p>Secure sign out.</p>
     </div>
-    <div class="widget-action">&rarr;</div>
   </a>
 </div>
 <% if (errors && errors.length) { %>
@@ -49,53 +48,20 @@
 <% if (messages && messages.length) { %>
   <div class="alert alert-success"><%= messages.join(', ') %></div>
 <% } %>
-<div class="row g-4">
-  <div class="col-md-6">
-    <div class="card shadow-sm h-100">
-      <div class="card-header fw-semibold">Products (<%= products.length %>)</div>
-      <ul class="list-group list-group-flush">
-        <% products.forEach(p => { %>
-          <li class="list-group-item d-flex justify-content-between align-items-center">
-            <a href="/admin/products/<%= p.id %>" class="text-decoration-none"><%= p.productName %></a>
-            <span class="badge bg-secondary"><%= p.category || 'Uncategorized' %></span>
-          </li>
-        <% }) %>
-        <% if (products.length === 0) { %>
-          <li class="list-group-item">No products found.</li>
-        <% } %>
-      </ul>
-      <div class="card-footer text-end">
-        <a href="/addProduct" class="btn btn-primary btn-sm" aria-label="Add new product">Add Product</a>
-      </div>
-    </div>
-  </div>
-  <div class="col-md-6">
-    <div class="card shadow-sm h-100">
-      <div class="card-header fw-semibold">Users (<%= users.length %>)</div>
-      <ul class="list-group list-group-flush">
-        <% users.forEach(u => { %>
-          <li class="list-group-item d-flex justify-content-between align-items-center flex-wrap">
-            <div class="d-flex align-items-center gap-2">
-              <span class="fw-semibold"><%= u.username %></span>
-              <span class="badge bg-dark"><%= u.role %></span>
-            </div>
-            <div class="d-flex align-items-center gap-2 mt-2 mt-md-0">
-              <a href="/admin/users/<%= u.id %>/edit" class="btn btn-sm btn-outline-primary" aria-label="Edit <%= u.username %>">Edit</a>
-              <a href="/admin/users/<%= u.id %>/orders" class="btn btn-sm btn-outline-secondary" aria-label="View orders for <%= u.username %>">Orders</a>
-              <form action="/admin/users/<%= u.id %>/delete" method="POST" style="display:inline" onsubmit="return confirm('Delete user <%= u.username %>? This action cannot be undone.');">
-                <button type="submit" class="btn btn-sm btn-outline-danger" aria-label="Delete <%= u.username %>">Delete</button>
-              </form>
-            </div>
-          </li>
-        <% }) %>
-        <% if (users.length === 0) { %>
-          <li class="list-group-item">No users found.</li>
-        <% } %>
-      </ul>
-      <div class="card-footer text-end">
-        <a href="/admin/users" class="btn btn-sm btn-secondary" aria-label="Go to full user management page">Manage Users</a>
-      </div>
-    </div>
-  </div>
-</div>
 <%- include('partials/footer') %>
+
+<style>
+  .admin-hero { display:flex; align-items:center; justify-content:space-between; gap:16px; padding:20px 22px; border-radius:18px; border:1px solid #e6e1da; background:linear-gradient(120deg,#ffffff,#f2ede6); box-shadow:0 18px 36px -28px rgba(15,23,42,.45); flex-wrap:wrap; }
+  .admin-title { margin:0; font-size:36px; font-weight:700; letter-spacing:.2px; }
+  .admin-eyebrow { text-transform:uppercase; letter-spacing:.24em; font-size:.7rem; color:#7a8696; font-weight:600; }
+  .admin-hero-actions { display:flex; gap:10px; flex-wrap:wrap; }
+  .admin-hero-actions .btn { min-width: 140px; justify-content: center; }
+  .admin-quick-grid { display:grid; gap:16px; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); }
+  .admin-quick-card { display:flex; gap:14px; align-items:center; padding:16px 18px; border-radius:16px; border:1px solid #e6e1da; background:#fff; box-shadow:0 12px 24px -24px rgba(15,23,42,.35); text-decoration:none; color:#1f2933; transition:transform .18s ease, box-shadow .18s ease; }
+  .admin-quick-card:hover { transform:translateY(-2px); box-shadow:0 16px 28px -24px rgba(15,23,42,.45); }
+  .admin-quick-card h4 { margin:0 0 4px; font-size:1.02rem; font-weight:700; }
+  .admin-quick-card p { margin:0; color:#667085; font-size:.9rem; }
+  .quick-icon { width:44px; height:44px; border-radius:12px; display:flex; align-items:center; justify-content:center; background:#f3f6f9; color:#0b3b5c; }
+  .quick-icon svg { width:22px; height:22px; stroke:currentColor; fill:none; stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round; }
+  @media (max-width:720px) { .admin-hero-actions { width:100%; } }
+</style>

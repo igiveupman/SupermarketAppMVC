@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>NETS QR</title>
+</head>
+<body>
+    <h1>Shopping Cart</h1>
+    <h3>Pay with NETS</h3>
+    <img width="10%" src="./images/highlighter-156032_640.png">
+    <form action="/generateNETSQR" method="POST">
+        <label for="amount">Price: 2.50</label>
+        <input type="hidden" id="cartTotal" name="cartTotal" value="2.50" required>
+        <br>
+        <button type="submit">Make payment</button>
+    </form>
+</body>
+</html>

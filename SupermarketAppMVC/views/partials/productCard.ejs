@@ -49,7 +49,7 @@
         <div class="input-group mb-2">
           <input type="number" name="quantity" class="form-control qty-input" data-max="<%= p.quantity %>" min="1" max="<%= p.quantity %>" value="1" required>
         </div>
-        <button type="submit" class="btn btn-primary w-100">&#128722; Add to Cart</button>
+        <button type="submit" class="btn btn-primary w-100"><span class="btn-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="9" cy="19" r="1.5"></circle><circle cx="17" cy="19" r="1.5"></circle><path d="M5 6h16l-2 9H7L5 6z"></path><path d="M5 6L4 3H2"></path></svg></span>Add to Cart</button>
       </form>
     <% } else { %>
       <button class="btn btn-secondary w-100 mt-auto" disabled>Not Available</button>
