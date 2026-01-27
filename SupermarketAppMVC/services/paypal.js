@@ -55,4 +55,21 @@ async function captureOrder(orderId) {
   return data;
 }
 
-module.exports = { createOrder, captureOrder };
+// Refund a captured PayPal payment (full or partial).
+async function refundCapture(captureId, amount, currency) {
+  const accessToken = await getAccessToken();
+  const body = amount
+    ? { amount: { value: amount, currency_code: currency || 'SGD' } }
+    : {};
+  const response = await fetch(`${PAYPAL_API}/v2/payments/captures/${captureId}/refund`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${accessToken}`
+    },
+    body: JSON.stringify(body)
+  });
+  return await response.json();
+}
+
+module.exports = { createOrder, captureOrder, refundCapture };

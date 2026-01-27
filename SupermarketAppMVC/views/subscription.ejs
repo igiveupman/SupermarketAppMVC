@@ -1,57 +1,87 @@
 <%- include('partials/header', { user, pageTitle: 'Subscriptions', currentPage: 'subscription', messages, errors }) %>
 
 <section class="subscription-hero">
-  <div class="subscription-hero-inner">
-    <h1 class="subscription-title">Subscription Tiers</h1>
-    <p class="muted subscription-subtitle">Start on Basic, upgrade anytime for more benefits.</p>
-    <div class="subscription-status">
-      <span class="status-label">Your current tier:</span>
-      <span class="status-pill"><%= currentTier.name %></span>
+  <div class="subscription-hero-inner subscription-hero-grid">
+    <div class="subscription-hero-copy">
+      <span class="subscription-eyebrow">Membership</span>
+      <h1 class="subscription-title">Subscription Tiers</h1>
+      <p class="muted subscription-subtitle">Start on Basic, upgrade anytime for more benefits.</p>
+      <div class="subscription-highlights">
+        <div class="highlight-chip">Monthly billing, cancel anytime</div>
+        <div class="highlight-chip">Member-only pricing discounts</div>
+      </div>
+    </div>
+    <div class="subscription-status-card">
+      <div class="status-top">
+        <span class="status-label">Your current tier</span>
+        <span class="status-pill"><%= currentTier.name %></span>
+      </div>
+      <div class="status-meta">
       <% if (billingDate) { %>
         <span class="status-note">Next billing: <%= billingDate %></span>
       <% } else { %>
         <span class="status-note">No monthly charge on Basic.</span>
       <% } %>
-      <% if (currentTier.id !== 'basic') { %>
-        <form action="/subscription/cancel" method="POST" class="d-inline">
-          <button type="submit" class="btn btn-outline btn-sm" onclick="return confirm('Cancel your subscription and return to Basic?');"><span class="btn-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6 6l12 12"></path><path d="M18 6l-12 12"></path></svg></span>Cancel Subscription</button>
-        </form>
+      <% if (cancellationEffective) { %>
+        <span class="status-note">Cancellation effective: <%= new Date(cancellationEffective).toLocaleDateString() %></span>
       <% } %>
+      </div>
+      <div class="status-actions">
+      <% if (currentTier.id !== 'basic') { %>
+        <a href="/subscription/cancel" class="btn btn-outline btn-sm">
+          <span class="btn-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6 6l12 12"></path><path d="M18 6l-12 12"></path></svg></span>
+          Cancel Subscription
+        </a>
+      <% } else { %>
+        <span class="status-note">Upgrade to unlock discounts.</span>
+      <% } %>
+      </div>
     </div>
   </div>
 </section>
 
-<section class="subscription-grid">
-  <% tiers.forEach((tier) => { %>
-    <div class="tier-card <%= tier.isCurrent ? 'current' : '' %>">
-      <div class="tier-header">
-        <h3><%= tier.name %></h3>
-        <div class="tier-price">
-          <% if (tier.price > 0) { %>
-            <span class="price-main">$<%= tier.priceFormatted %></span>
-            <span class="price-sub">/ month</span>
+<section class="subscription-grid-block">
+  <div class="subscription-grid-head">
+    <h2>Choose your plan</h2>
+    <p class="muted">Each tier includes monthly savings and checkout perks.</p>
+  </div>
+  <div class="subscription-grid">
+    <% tiers.forEach((tier) => { %>
+      <div class="tier-card <%= tier.isCurrent ? 'current' : '' %>">
+        <div class="tier-header">
+          <div class="tier-title-row">
+            <h3><%= tier.name %></h3>
+            <% if (tier.isCurrent) { %>
+              <span class="tier-flag">Current</span>
+            <% } %>
+          </div>
+          <div class="tier-price">
+            <% if (tier.price > 0) { %>
+              <span class="price-main">$<%= tier.priceFormatted %></span>
+              <span class="price-sub">/ month</span>
+            <% } else { %>
+              <span class="price-main">Free</span>
+              <span class="price-sub">/ month</span>
+            <% } %>
+          </div>
+        </div>
+        <ul class="tier-benefits">
+          <% tier.benefits.forEach((benefit) => { %>
+            <li><span class="benefit-dot">&#10003;</span><%= benefit %></li>
+          <% }) %>
+        </ul>
+        <div class="tier-actions">
+          <% if (tier.isCurrent) { %>
+            <button class="btn btn-outline" type="button" disabled>Current Plan</button>
+          <% } else if (tier.canUpgrade) { %>
+            <a class="btn btn-primary" href="/subscription/checkout?tier=<%= tier.id %>">Upgrade to <%= tier.name %></a>
           <% } else { %>
-            <span class="price-main">Free</span>
-            <span class="price-sub">/ month</span>
+            <button class="btn btn-outline" type="button" disabled>Available on request</button>
           <% } %>
         </div>
       </div>
-      <ul class="tier-benefits">
-        <% tier.benefits.forEach((benefit) => { %>
-          <li><span class="benefit-dot">&#10003;</span><%= benefit %></li>
-        <% }) %>
-      </ul>
-      <div class="tier-actions">
-        <% if (tier.isCurrent) { %>
-          <button class="btn btn-outline" type="button" disabled>Current Plan</button>
-        <% } else if (tier.canUpgrade) { %>
-          <a class="btn btn-primary" href="/subscription/checkout?tier=<%= tier.id %>">Upgrade to <%= tier.name %></a>
-        <% } else { %>
-          <button class="btn btn-outline" type="button" disabled>Available on request</button>
-        <% } %>
-      </div>
-    </div>
-  <% }) %>
+    <% }) %>
+  </div>
 </section>
 
 <section class="subscription-notes">

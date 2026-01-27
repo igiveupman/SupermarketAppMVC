@@ -3,8 +3,8 @@ const ESSENTIAL_FREE_THRESHOLD = 40.0;
 
 const DISCOUNT_RATES = {
   basic: 0,
-  essential: 0.05,
-  premium: 0.1
+  essential: 0,
+  premium: 0
 };
 
 function roundMoney(value) {
@@ -13,6 +13,12 @@ function roundMoney(value) {
 
 function getTier(user) {
   if (!user || !user.subscription_tier) return 'basic';
+  if (user.subscription_cancel_effective_at) {
+    const effective = new Date(user.subscription_cancel_effective_at);
+    if (!Number.isNaN(effective.getTime()) && new Date() >= effective) {
+      return 'basic';
+    }
+  }
   return String(user.subscription_tier).toLowerCase();
 }
 
@@ -21,7 +27,7 @@ function getDiscountRate(tier) {
 }
 
 // Applies subscription benefits (discount + delivery rules) to cart totals.
-function computeCartPricing(cart, user) {
+function computeCartPricing(cart, user, voucher) {
   const tier = getTier(user);
   const discountRate = getDiscountRate(tier);
   let subtotal = 0;
@@ -57,7 +63,11 @@ function computeCartPricing(cart, user) {
     freeDeliveryApplied = true;
   }
 
-  const total = roundMoney(discountedSubtotal + deliveryFee);
+  const totalBeforeVoucher = roundMoney(discountedSubtotal + deliveryFee);
+  const voucherValue = voucher && Number(voucher.amount) > 0 ? Number(voucher.amount) : 0;
+  const voucherEligible = voucherValue > 0 && voucherValue <= discountedSubtotal;
+  const voucherAmount = voucherEligible ? voucherValue : 0;
+  const total = roundMoney(totalBeforeVoucher - voucherAmount);
 
   return {
     tier,
@@ -67,6 +77,10 @@ function computeCartPricing(cart, user) {
     discountedSubtotal,
     deliveryFee,
     total,
+    totalBeforeVoucher,
+    voucherAmount,
+    voucherCode: voucherEligible && voucher && voucher.code ? String(voucher.code) : null,
+    voucherRejected: !!(voucherValue > 0 && !voucherEligible),
     freeDeliveryApplied,
     freeDeliveryThreshold: ESSENTIAL_FREE_THRESHOLD,
     baseDeliveryFee: BASE_DELIVERY_FEE,

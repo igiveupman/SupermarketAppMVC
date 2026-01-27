@@ -29,6 +29,21 @@ CREATE TABLE `orders` (
   `delivery_method` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'pickup',
   `delivery_address` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
   `delivery_fee` decimal(10,2) NOT NULL DEFAULT '0.00',
+  `payment_provider` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `payment_reference` varchar(80) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `payment_order_id` varchar(80) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `refund_status` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `refund_reference` varchar(80) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `refund_amount` decimal(10,2) DEFAULT NULL,
+  `refunded_at` datetime DEFAULT NULL,
+  `refund_request_status` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `refund_request_reason` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci,
+  `refund_request_amount` decimal(10,2) DEFAULT NULL,
+  `refund_requested_at` datetime DEFAULT NULL,
+  `refund_request_note` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `refund_decision_at` datetime DEFAULT NULL,
+  `voucher_code` varchar(40) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `voucher_amount` decimal(10,2) DEFAULT NULL,
   `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   KEY `orders_user_id_idx` (`user_id`),
@@ -42,7 +57,7 @@ CREATE TABLE `orders` (
 
 LOCK TABLES `orders` WRITE;
 /*!40000 ALTER TABLE `orders` DISABLE KEYS */;
-INSERT INTO `orders` VALUES (27,8,3.60,'paynow','jurong avenue 1',0.00,'2025-11-27 14:34:48'),(28,5,4.80,'paynow','123 John Street',0.00,'2025-11-27 15:42:07');
+INSERT INTO `orders` VALUES (27,8,3.60,'paynow','jurong avenue 1',0.00,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,'2025-11-27 14:34:48'),(28,5,4.80,'paynow','123 John Street',0.00,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,'2025-11-27 15:42:07');
 /*!40000 ALTER TABLE `orders` ENABLE KEYS */;
 UNLOCK TABLES;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;

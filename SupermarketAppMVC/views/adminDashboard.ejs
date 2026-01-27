@@ -12,6 +12,13 @@
   </div>
 </section>
 
+<% if (typeof pendingRefundCount !== 'undefined' && pendingRefundCount > 0) { %>
+  <div class="alert alert-warning d-flex align-items-center justify-content-between flex-wrap gap-2">
+    <span><strong><%= pendingRefundCount %></strong> refund request(s) pending approval.</span>
+    <a class="btn btn-sm btn-outline-dark" href="/admin/refund-requests">Review Requests</a>
+  </div>
+<% } %>
+
 <div class="admin-quick-grid mb-4">
   <a class="admin-quick-card" href="/inventory" aria-label="Manage inventory">
     <div class="quick-icon"><svg viewBox="0 0 24 24"><path d="M3 7l9-4 9 4-9 4-9-4z"></path><path d="M3 7v10l9 4 9-4V7"></path><path d="M12 11v10"></path></svg></div>
@@ -30,8 +37,19 @@
   <a class="admin-quick-card" href="/admin/users" aria-label="Manage users">
     <div class="quick-icon"><svg viewBox="0 0 24 24"><path d="M16 11a4 4 0 1 0-8 0"></path><path d="M4 20a8 8 0 0 1 16 0"></path><circle cx="12" cy="7" r="3"></circle></svg></div>
     <div>
-      <h4>Users</h4>
+      <h4>Users
+        <% if (typeof pendingRefundCount !== 'undefined' && pendingRefundCount > 0) { %>
+          <span class="badge bg-warning text-dark ms-2"><%= pendingRefundCount %> pending</span>
+        <% } %>
+      </h4>
       <p>Roles, access, and orders.</p>
+    </div>
+  </a>
+  <a class="admin-quick-card" href="/admin/vouchers" aria-label="Manage vouchers">
+    <div class="quick-icon"><svg viewBox="0 0 24 24"><path d="M4 7h16v10H4z"></path><path d="M7 7v10"></path><path d="M17 7v10"></path><circle cx="9.5" cy="12" r="1.4"></circle><circle cx="14.5" cy="12" r="1.4"></circle></svg></div>
+    <div>
+      <h4>Vouchers</h4>
+      <p>Create fixed-amount discount codes.</p>
     </div>
   </a>
   <a class="admin-quick-card" href="/logout" aria-label="Logout">

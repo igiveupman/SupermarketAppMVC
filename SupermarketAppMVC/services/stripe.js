@@ -26,6 +26,19 @@ async function createPaymentIntent(amount, metadata) {
   });
 }
 
+// Create a PayNow PaymentIntent (SGD) for QR code payment.
+async function createPayNowIntent(amount, metadata) {
+  const client = getClient();
+  if (!client) throw new Error('Stripe secret key is missing.');
+  const payload = {
+    amount: toMinorUnits(amount),
+    currency: 'sgd',
+    payment_method_types: ['paynow'],
+    metadata: metadata || {}
+  };
+  return client.paymentIntents.create(payload);
+}
+
 // Fetch a PaymentIntent to verify status server-side.
 async function retrievePaymentIntent(paymentIntentId) {
   const client = getClient();
@@ -33,8 +46,21 @@ async function retrievePaymentIntent(paymentIntentId) {
   return client.paymentIntents.retrieve(paymentIntentId);
 }
 
+// Create a refund for a PaymentIntent (full or partial).
+async function createRefund(paymentIntentId, amount) {
+  const client = getClient();
+  if (!client) throw new Error('Stripe secret key is missing.');
+  const payload = { payment_intent: paymentIntentId };
+  if (Number.isFinite(amount)) {
+    payload.amount = toMinorUnits(amount);
+  }
+  return client.refunds.create(payload);
+}
+
 module.exports = {
   createPaymentIntent,
+  createPayNowIntent,
   retrievePaymentIntent,
+  createRefund,
   toMinorUnits
 };

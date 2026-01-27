@@ -77,6 +77,46 @@ connection.query(
         }
     }
 );
+// Ensure vouchers table exists
+connection.query(
+    'CREATE TABLE IF NOT EXISTS vouchers (' +
+    'id INT AUTO_INCREMENT PRIMARY KEY,' +
+    'code VARCHAR(40) NOT NULL UNIQUE,' +
+    'amount DECIMAL(10,2) NOT NULL,' +
+    'user_id INT NULL,' +
+    'max_uses INT NOT NULL DEFAULT 1,' +
+    'active TINYINT(1) NOT NULL DEFAULT 1,' +
+    'expires_at DATETIME NOT NULL,' +
+    'created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,' +
+    'created_by_admin_id INT NULL,' +
+    'FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL,' +
+    'FOREIGN KEY (created_by_admin_id) REFERENCES users(id) ON DELETE SET NULL' +
+    ')',
+    (vErr) => {
+        if (vErr) {
+            console.error('Failed to ensure vouchers table:', vErr.code || vErr);
+        }
+    }
+);
+// Ensure voucher_redemptions table exists
+connection.query(
+    'CREATE TABLE IF NOT EXISTS voucher_redemptions (' +
+    'id INT AUTO_INCREMENT PRIMARY KEY,' +
+    'voucher_id INT NOT NULL,' +
+    'user_id INT NOT NULL,' +
+    'order_id INT NOT NULL,' +
+    'redeemed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,' +
+    'UNIQUE KEY uq_voucher_user (voucher_id, user_id),' +
+    'FOREIGN KEY (voucher_id) REFERENCES vouchers(id) ON DELETE CASCADE,' +
+    'FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,' +
+    'FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE' +
+    ')',
+    (rErr) => {
+        if (rErr) {
+            console.error('Failed to ensure voucher_redemptions table:', rErr.code || rErr);
+        }
+    }
+);
 
 // Ensure subscription fields exist on users
 connection.query("ALTER TABLE users ADD COLUMN subscription_tier VARCHAR(20) NOT NULL DEFAULT 'basic'", (sErr) => {
@@ -92,6 +132,103 @@ connection.query('ALTER TABLE users ADD COLUMN subscription_price DECIMAL(10,2) 
 connection.query('ALTER TABLE users ADD COLUMN subscription_started_at DATETIME NULL', (dErr) => {
     if (dErr && dErr.code !== 'ER_DUP_FIELDNAME') {
         console.error('Failed to ensure subscription_started_at column:', dErr.code);
+    }
+});
+connection.query('ALTER TABLE users ADD COLUMN subscription_cancel_reason TEXT NULL', (dErr) => {
+    if (dErr && dErr.code !== 'ER_DUP_FIELDNAME') {
+        console.error('Failed to ensure subscription_cancel_reason column:', dErr.code);
+    }
+});
+connection.query('ALTER TABLE users ADD COLUMN subscription_cancelled_at DATETIME NULL', (dErr) => {
+    if (dErr && dErr.code !== 'ER_DUP_FIELDNAME') {
+        console.error('Failed to ensure subscription_cancelled_at column:', dErr.code);
+    }
+});
+connection.query('ALTER TABLE users ADD COLUMN subscription_cancel_effective_at DATETIME NULL', (dErr) => {
+    if (dErr && dErr.code !== 'ER_DUP_FIELDNAME') {
+        console.error('Failed to ensure subscription_cancel_effective_at column:', dErr.code);
+    }
+});
+
+// Ensure payment metadata fields exist on orders (for refunds)
+connection.query('ALTER TABLE orders ADD COLUMN payment_provider VARCHAR(20) NULL', (oErr) => {
+    if (oErr && oErr.code !== 'ER_DUP_FIELDNAME') {
+        console.error('Failed to ensure payment_provider column:', oErr.code);
+    }
+});
+connection.query('ALTER TABLE orders ADD COLUMN payment_reference VARCHAR(80) NULL', (oErr) => {
+    if (oErr && oErr.code !== 'ER_DUP_FIELDNAME') {
+        console.error('Failed to ensure payment_reference column:', oErr.code);
+    }
+});
+connection.query('ALTER TABLE orders ADD COLUMN payment_order_id VARCHAR(80) NULL', (oErr) => {
+    if (oErr && oErr.code !== 'ER_DUP_FIELDNAME') {
+        console.error('Failed to ensure payment_order_id column:', oErr.code);
+    }
+});
+connection.query('ALTER TABLE orders ADD COLUMN refund_status VARCHAR(20) NULL', (oErr) => {
+    if (oErr && oErr.code !== 'ER_DUP_FIELDNAME') {
+        console.error('Failed to ensure refund_status column:', oErr.code);
+    }
+});
+connection.query('ALTER TABLE orders ADD COLUMN refund_reference VARCHAR(80) NULL', (oErr) => {
+    if (oErr && oErr.code !== 'ER_DUP_FIELDNAME') {
+        console.error('Failed to ensure refund_reference column:', oErr.code);
+    }
+});
+connection.query('ALTER TABLE orders ADD COLUMN refund_amount DECIMAL(10,2) NULL', (oErr) => {
+    if (oErr && oErr.code !== 'ER_DUP_FIELDNAME') {
+        console.error('Failed to ensure refund_amount column:', oErr.code);
+    }
+});
+connection.query('ALTER TABLE orders ADD COLUMN refunded_at DATETIME NULL', (oErr) => {
+    if (oErr && oErr.code !== 'ER_DUP_FIELDNAME') {
+        console.error('Failed to ensure refunded_at column:', oErr.code);
+    }
+});
+connection.query('ALTER TABLE orders ADD COLUMN voucher_code VARCHAR(40) NULL', (oErr) => {
+    if (oErr && oErr.code !== 'ER_DUP_FIELDNAME') {
+        console.error('Failed to ensure voucher_code column:', oErr.code);
+    }
+});
+connection.query('ALTER TABLE orders ADD COLUMN voucher_amount DECIMAL(10,2) NULL', (oErr) => {
+    if (oErr && oErr.code !== 'ER_DUP_FIELDNAME') {
+        console.error('Failed to ensure voucher_amount column:', oErr.code);
+    }
+});
+connection.query('ALTER TABLE orders ADD COLUMN refund_request_status VARCHAR(20) NULL', (oErr) => {
+    if (oErr && oErr.code !== 'ER_DUP_FIELDNAME') {
+        console.error('Failed to ensure refund_request_status column:', oErr.code);
+    }
+});
+connection.query('ALTER TABLE orders ADD COLUMN refund_request_reason TEXT NULL', (oErr) => {
+    if (oErr && oErr.code !== 'ER_DUP_FIELDNAME') {
+        console.error('Failed to ensure refund_request_reason column:', oErr.code);
+    }
+});
+connection.query('ALTER TABLE orders ADD COLUMN refund_request_amount DECIMAL(10,2) NULL', (oErr) => {
+    if (oErr && oErr.code !== 'ER_DUP_FIELDNAME') {
+        console.error('Failed to ensure refund_request_amount column:', oErr.code);
+    }
+});
+connection.query('ALTER TABLE orders ADD COLUMN refund_requested_at DATETIME NULL', (oErr) => {
+    if (oErr && oErr.code !== 'ER_DUP_FIELDNAME') {
+        console.error('Failed to ensure refund_requested_at column:', oErr.code);
+    }
+});
+connection.query('ALTER TABLE orders ADD COLUMN refund_request_note VARCHAR(255) NULL', (oErr) => {
+    if (oErr && oErr.code !== 'ER_DUP_FIELDNAME') {
+        console.error('Failed to ensure refund_request_note column:', oErr.code);
+    }
+});
+connection.query('ALTER TABLE orders ADD COLUMN refund_decision_at DATETIME NULL', (oErr) => {
+    if (oErr && oErr.code !== 'ER_DUP_FIELDNAME') {
+        console.error('Failed to ensure refund_decision_at column:', oErr.code);
+    }
+});
+connection.query('ALTER TABLE orders ADD COLUMN items_snapshot TEXT NULL', (oErr) => {
+    if (oErr && oErr.code !== 'ER_DUP_FIELDNAME') {
+        console.error('Failed to ensure items_snapshot column:', oErr.code);
     }
 });
 
@@ -156,6 +293,9 @@ const OrderController = require('./controllers/OrderController');
 const ReviewController = require('./controllers/ReviewController');
 const SubscriptionController = require('./controllers/SubscriptionController');
 const StripeController = require('./controllers/StripeController');
+const VoucherController = require('./controllers/VoucherController');
+const { computeCartPricing } = require('./services/subscriptionPricing');
+const vouchers = require('./services/vouchers');
 // Lazy-load puppeteer for PDF generation
 let puppeteer;
 const AuthController = require('./controllers/AuthController');
@@ -233,6 +373,8 @@ app.post('/cart/update/:id', checkAuthenticated, CartController.updateQuantity);
 // Convenience: allow GET navigation to clear cart (same auth guard)
 app.get('/cart/clear', checkAuthenticated, CartController.clearCart);
 app.post('/cart/clear', checkAuthenticated, CartController.clearCart);
+app.post('/cart/voucher/apply', checkAuthenticated, CartController.applyVoucher);
+app.post('/cart/voucher/remove', checkAuthenticated, CartController.removeVoucher);
 app.post('/cart/checkout', checkAuthenticated, CartController.checkout);
 // API checkout (JSON response)
 app.post('/api/cart/checkout', checkAuthenticated, CartController.apiCheckout);
@@ -242,8 +384,26 @@ app.post('/purchase', checkAuthenticated, CartController.paymentProcess);
 // PayPal: Create Order (cart checkout)
 app.post('/api/paypal/create-order', checkAuthenticated, async (req, res) => {
     try {
-        const { amount } = req.body;
-        const order = await paypal.createOrder(amount);
+        const cart = req.session.cart || [];
+        if (!cart.length) return res.status(400).json({ error: 'Cart is empty.' });
+        const voucher = await vouchers.resolveAppliedVoucher(req);
+        const pricing = computeCartPricing(cart, req.session.user, voucher);
+        if (pricing.voucherRejected) {
+            req.session.applied_voucher = null;
+        }
+        req.session.checkout_cart = (cart || []).map((item) => ({
+            productId: item.productId,
+            productName: item.productName,
+            price: Number(item.price),
+            originalPrice: Number(item.originalPrice),
+            discountApplied: !!item.discountApplied,
+            quantity: Number(item.quantity) || 0,
+            image: item.image
+        }));
+        req.session.checkout_voucher = voucher ? { id: voucher.id, code: voucher.code, amount: Number(voucher.amount) } : null;
+        req.session.checkout_total = pricing.total.toFixed(2);
+        req.session.checkout_source = 'paypal';
+        const order = await paypal.createOrder(pricing.total.toFixed(2));
         if (order && order.id) {
             return res.json({ id: order.id });
         }
@@ -261,9 +421,33 @@ app.post('/api/paypal/capture-order', checkAuthenticated, async (req, res) => {
         }
         const capture = await paypal.captureOrder(orderID);
         if (capture.status === 'COMPLETED') {
+            const captureAmount = capture
+                && capture.purchase_units
+                && capture.purchase_units[0]
+                && capture.purchase_units[0].payments
+                && capture.purchase_units[0].payments.captures
+                && capture.purchase_units[0].payments.captures[0]
+                && capture.purchase_units[0].payments.captures[0].amount
+                ? Number(capture.purchase_units[0].payments.captures[0].amount.value)
+                : null;
+            const expectedTotal = req.session.checkout_total ? Number(req.session.checkout_total) : null;
+            if (expectedTotal && captureAmount && Math.abs(expectedTotal - captureAmount) > 0.01) {
+                return res.status(400).json({ error: 'Payment amount mismatch.' });
+            }
+            const captureId = capture
+                && capture.purchase_units
+                && capture.purchase_units[0]
+                && capture.purchase_units[0].payments
+                && capture.purchase_units[0].payments.captures
+                && capture.purchase_units[0].payments.captures[0]
+                ? capture.purchase_units[0].payments.captures[0].id
+                : null;
             req.session.checkout_address = delivery_address.trim();
             req.session.checkout_contact = (delivery_contact || '').trim();
             req.session.payment_method = 'paypal';
+            req.session.payment_provider = 'paypal';
+            req.session.payment_reference = captureId;
+            req.session.payment_order_id = orderID;
             req.session.paypal_captured = true;
             return res.json({ success: true, redirect: '/paypal/complete' });
         }
@@ -281,6 +465,11 @@ app.get('/paypal/complete', checkAuthenticated, (req, res) => {
     req.session.paypal_captured = false;
     req.session.payment_flow = 'paypal';
     return CartController.checkout(req, res);
+});
+
+// PayNow return page (used after Stripe-hosted PayNow test flow)
+app.get('/paynow/return', checkAuthenticated, (req, res) => {
+    res.render('paynowReturn', { user: req.session.user });
 });
 // NETS QR callbacks (cart or subscription)
 app.get('/nets-qr/success', checkAuthenticated, (req, res) => {
@@ -305,6 +494,8 @@ app.get('/nets-qr/fail', checkAuthenticated, (req, res) => {
 });
 // Orders history page and JSON API
 app.get('/orders', checkAuthenticated, OrderController.index);
+app.get('/vouchers', checkAuthenticated, VoucherController.index);
+app.post('/orders/:id/refund-request', checkAuthenticated, OrderController.requestRefund);
 // Printable invoice per order
 app.get('/orders/:id/invoice', checkAuthenticated, OrderController.invoice);
 // Invoice PDF export
@@ -382,15 +573,19 @@ app.get('/subscription', checkAuthenticated, SubscriptionController.index);
 app.get('/subscription/checkout', checkAuthenticated, SubscriptionController.checkoutForm);
 app.post('/subscription/checkout', checkAuthenticated, SubscriptionController.checkoutProcess);
 app.get('/subscription/complete', checkAuthenticated, SubscriptionController.complete);
+app.get('/subscription/cancel', checkAuthenticated, SubscriptionController.cancelForm);
 app.post('/subscription/cancel', checkAuthenticated, SubscriptionController.cancel);
 app.post('/api/paypal/subscription/create-order', checkAuthenticated, SubscriptionController.paypalCreateOrder);
 app.post('/api/paypal/subscription/capture-order', checkAuthenticated, SubscriptionController.paypalCaptureOrder);
 
 // Stripe card payments (cart + subscription)
 app.post('/api/stripe/order-intent', checkAuthenticated, StripeController.createOrderIntent);
+app.post('/api/stripe/order-paynow-intent', checkAuthenticated, StripeController.createOrderPayNowIntent);
 app.post('/stripe/order/complete', checkAuthenticated, StripeController.completeOrder);
 app.post('/api/stripe/subscription-intent', checkAuthenticated, StripeController.createSubscriptionIntent);
+app.post('/api/stripe/subscription-paynow-intent', checkAuthenticated, StripeController.createSubscriptionPayNowIntent);
 app.post('/stripe/subscription/complete', checkAuthenticated, StripeController.completeSubscription);
+app.get('/api/stripe/intent-status/:id', checkAuthenticated, StripeController.getIntentStatus);
 
 // Server-Sent Events endpoint for NETS QR status polling
 app.get('/sse/payment-status/:txnRetrievalRef', checkAuthenticated, async (req, res) => {

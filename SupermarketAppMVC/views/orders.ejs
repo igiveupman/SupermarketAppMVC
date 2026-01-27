@@ -7,13 +7,29 @@
   <div class="list-group">
   <% orders.forEach((o, idx) => { %>
     <% const orderNumber = typeof o.displayNumber !== 'undefined' ? o.displayNumber : (orders.length - idx); %>
+    <% const reqStatus = o.refund_request_status ? String(o.refund_request_status).toLowerCase() : ''; %>
+    <% const refundState = o.refund_status ? String(o.refund_status).toLowerCase() : ''; %>
+    <% const isRefunded = refundState === 'refunded' || refundState === 'succeeded' || refundState === 'completed'; %>
+    <% const itemSubtotal = (itemsByOrder[o.id] || []).reduce((s,it)=> s + Number(it.total_price || 0), 0); %>
+    <% const voucherAmt = Number(o.voucher_amount || 0); %>
+    <% const deliveryFee = Number(o.delivery_fee || 0); %>
+    <% const derivedTotal = (itemSubtotal + deliveryFee - voucherAmt); %>
+    <% const recordedTotal = Number(o.total || 0); %>
     <div class="list-group-item mb-3 shadow-sm rounded-md order-card" id="order-<%= o.id %>">
       <div class="d-flex justify-content-between align-items-center flex-wrap">
         <div>
           <strong>Order #<%= orderNumber %></strong>
+          <div class="text-muted small">Order ID: <%= o.id %></div>
           <div class="text-muted small">Placed: <%= new Date(o.created_at).toLocaleString() %></div>
           <div class="small">Method: <%= o.delivery_method %> | Fee: $<%= Number(o.delivery_fee).toFixed(2) %></div>
-          <div class="fw-semibold">Total: $<%= Number(o.total).toFixed(2) %></div>
+          <div class="small">Items subtotal: $<%= itemSubtotal.toFixed(2) %></div>
+          <% if (voucherAmt > 0) { %>
+            <div class="small text-success">Voucher (<%= o.voucher_code || 'Applied' %>): -$<%= voucherAmt.toFixed(2) %></div>
+          <% } %>
+          <div class="fw-semibold">Total: $<%= derivedTotal.toFixed(2) %></div>
+          <% if (Math.abs(derivedTotal - recordedTotal) > 0.01) { %>
+            <div class="small text-warning">Recorded total differs: $<%= recordedTotal.toFixed(2) %></div>
+          <% } %>
         </div>
       </div>
       <div class="mt-2">
@@ -29,12 +45,38 @@
             <tr>
               <td><%= it.productName %></td>
               <td><%= it.quantity %></td>
-              <td>$<%= Number(it.price).toFixed(2) %></td>
-              <td>$<%= (Number(it.price) * it.quantity).toFixed(2) %></td>
+              <td>$<%= (Number(it.total_price || 0) / Number(it.quantity || 1)).toFixed(2) %></td>
+              <td>$<%= Number(it.total_price || 0).toFixed(2) %></td>
             </tr>
           <% }) %>
         </tbody>
       </table>
+      <div class="mt-3">
+        <% if (isRefunded) { %>
+          <div class="small text-success">Refunded successfully: $<%= Number(o.refund_amount || 0).toFixed(2) %></div>
+          <% if (o.refunded_at) { %>
+            <div class="small text-muted">Refunded on: <%= new Date(o.refunded_at).toLocaleString() %></div>
+          <% } %>
+        <% } else if (reqStatus === 'pending') { %>
+          <div class="small text-warning">Refund request pending review.</div>
+        <% } else if (reqStatus === 'denied') { %>
+          <div class="small text-danger">Refund request rejected.</div>
+          <% if (o.refund_request_note) { %>
+            <div class="small text-muted">Admin note: <%= o.refund_request_note %></div>
+          <% } %>
+        <% } else if (reqStatus === 'approved') { %>
+          <div class="small text-success">Refund approved.</div>
+          <% if (o.refund_request_note) { %>
+            <div class="small text-muted">Admin note: <%= o.refund_request_note %></div>
+          <% } %>
+        <% } else { %>
+          <form action="/orders/<%= o.id %>/refund-request" method="post" class="refund-request">
+            <label class="form-label fw-semibold">Request a refund</label>
+            <textarea class="form-control mb-2" name="reason" rows="2" required minlength="10" placeholder="Explain the issue (min 10 characters)."></textarea>
+            <button class="btn btn-outline-danger btn-sm" type="submit" onclick="return confirm('Submit a refund request for this order?');">Submit Refund Request</button>
+          </form>
+        <% } %>
+      </div>
     </div>
   <% }) %>
   </div>

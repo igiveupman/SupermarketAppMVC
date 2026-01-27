@@ -54,6 +54,16 @@ router.post('/users/:id/orders/clear', (req, res) => {
 
 // View a user's order history (admin)
 router.get('/users/:id/orders', AdminController.userOrders);
+// View pending refund requests (admin)
+router.get('/refund-requests', AdminController.refundRequests);
+// Voucher management (admin)
+router.get('/vouchers', AdminController.vouchersPage);
+router.post('/vouchers', AdminController.createVoucher);
+// Refund an order (admin)
+router.post('/orders/:id/refund', AdminController.refundOrder);
+// Approve/deny customer refund requests (admin)
+router.post('/orders/:id/refund/approve', AdminController.approveRefundRequest);
+router.post('/orders/:id/refund/deny', AdminController.denyRefundRequest);
 
 // Product management routes reuse ProductController
 router.get('/products', ProductController.index);
@@ -66,6 +76,10 @@ router.get('/products/:id/delete', ProductController.destroy);
 
 // undo last checkout (admin)
 router.post('/undo-last-checkout', AdminController.undoLastCheckout);
+// cleanup order_items duplicates (admin)
+router.post('/orders/cleanup-items', AdminController.cleanupOrderItems);
+// backfill order snapshots (admin)
+router.post('/orders/backfill-snapshots', AdminController.backfillOrderSnapshots);
 
 
 module.exports = router;

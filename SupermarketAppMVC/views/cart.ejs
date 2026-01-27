@@ -49,8 +49,8 @@
   <div class="d-flex justify-content-between align-items-center mt-3 flex-wrap gap-2">
     <div class="fw-semibold">
       <div>Subtotal: $<%= pricing.subtotal.toFixed(2) %></div>
-      <% if (pricing.discountAmount > 0) { %>
-        <div class="text-success">Member discount: -$<%= pricing.discountAmount.toFixed(2) %></div>
+      <% if (pricing.voucherAmount > 0) { %>
+        <div class="text-success">Voucher (<%= pricing.voucherCode %>): -$<%= Number(pricing.voucherAmount).toFixed(2) %></div>
       <% } %>
       <div>
         Delivery fee:
@@ -61,6 +61,18 @@
         <% } %>
       </div>
       <div class="mt-1">Total: $<%= pricing.total.toFixed(2) %></div>
+    </div>
+    <div class="voucher-panel">
+      <% if (pricing.voucherAmount > 0) { %>
+        <div class="small text-success mb-2">Voucher applied: <strong><%= pricing.voucherCode %></strong></div>
+        <form action="/cart/voucher/remove" method="post" class="d-inline">
+          <input type="hidden" name="returnTo" value="/cart" />
+          <button class="btn btn-outline btn-sm" type="submit">Remove Voucher</button>
+        </form>
+      <% } else { %>
+        <a class="btn btn-voucher" href="/vouchers"><span class="btn-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 7h16v10H4z"></path><path d="M7 7v10"></path><path d="M17 7v10"></path><circle cx="9.5" cy="12" r="1.4"></circle><circle cx="14.5" cy="12" r="1.4"></circle></svg></span>Choose Voucher</a>
+        <div class="voucher-hint">Apply from your vouchers list.</div>
+      <% } %>
     </div>
     <div>
   <a href="/purchase" class="btn btn-quick"><span class="btn-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 7h14l-2 10H7L5 7z"></path><path d="M9 7a3 3 0 1 1 6 0"></path><path d="M12 13h4"></path></svg></span>Purchase</a>

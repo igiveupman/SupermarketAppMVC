@@ -332,26 +332,211 @@ select.admin-select { height:auto; }
 .price-original { color:#64748b; text-decoration:line-through; }
 
 /* Subscription tiers */
-.subscription-hero { padding:24px 0 10px; }
-.subscription-hero-inner { background:linear-gradient(120deg,#ffffff,#f4efe8); border:1px solid #e6e1da; border-radius:22px; padding:26px 28px; box-shadow:0 18px 38px -26px rgba(15,23,42,.4); }
-.subscription-title { margin:0 0 6px; font-size:clamp(1.8rem,4vw,2.4rem); font-weight:700; }
+.subscription-hero { padding:28px 0 18px; }
+.subscription-hero-inner {
+  background:linear-gradient(120deg,#ffffff 0%,#f1f6ff 100%);
+  border:1px solid #d6e2f2;
+  border-radius:24px;
+  padding:30px 32px;
+  box-shadow:0 22px 48px -30px rgba(11,59,92,.45), inset 0 1px 0 rgba(255,255,255,.8);
+}
+.subscription-hero-grid { display:grid; grid-template-columns: minmax(280px, 1.3fr) minmax(240px, .9fr); gap:26px; align-items:stretch; }
+.subscription-hero-copy { display:flex; flex-direction:column; gap:10px; }
+.subscription-eyebrow { text-transform:uppercase; letter-spacing:.25em; font-size:.7rem; font-weight:700; color:#1f6c92; }
+.subscription-title { margin:0; font-size:clamp(1.9rem,4vw,2.5rem); font-weight:700; }
 .subscription-subtitle { margin:0; font-weight:500; }
-.subscription-status { margin-top:14px; display:flex; flex-wrap:wrap; gap:10px; align-items:center; }
-.status-label { font-weight:600; color:#0f172a; }
-.status-pill { background:#1d65c9; color:#fff; padding:4px 12px; border-radius:999px; font-size:.85rem; font-weight:600; }
-.status-note { color:#475569; font-size:.9rem; }
-.subscription-grid { margin:24px 0 10px; display:grid; gap:20px; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); }
-.tier-card { background:#fff; border:1px solid #e2e8f0; border-radius:18px; padding:22px 20px 20px; box-shadow:0 12px 28px -18px rgba(0,0,0,.3); display:flex; flex-direction:column; gap:14px; }
-.tier-card.current { border-color:#1d65c9; box-shadow:0 0 0 2px rgba(29,101,201,.2), 0 16px 28px -20px rgba(0,0,0,.3); }
-.tier-header h3 { margin:0; font-size:1.2rem; font-weight:700; }
-.tier-price { display:flex; align-items:baseline; gap:6px; }
+.subscription-highlights { display:grid; gap:8px; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); margin-top:6px; }
+.highlight-chip { background:#ffffff; border:1px solid #dbe4ef; border-radius:999px; padding:6px 14px; font-size:.82rem; font-weight:600; color:#0f172a; box-shadow:0 6px 14px -12px rgba(15,23,42,.35); }
+.subscription-status-card {
+  background:linear-gradient(140deg,#0b3b5c 0%,#1f6c92 100%);
+  border-radius:20px;
+  padding:20px 22px;
+  color:#f8fafc;
+  box-shadow:0 18px 40px -28px rgba(11,59,92,.7);
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+}
+.cancel-form { display:flex; flex-direction:column; gap:8px; }
+
+/* Subscription cancellation */
+.cancel-subscription { padding: 24px 0 60px; display:flex; justify-content:center; }
+.cancel-card { width:min(760px, 100%); background:#fff; border:1px solid #e2e8f0; border-radius:20px; padding:24px; box-shadow:0 18px 36px -28px rgba(15,23,42,.45); }
+.cancel-header { display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom:16px; }
+.cancel-eyebrow { text-transform:uppercase; letter-spacing:.22em; font-size:.7rem; color:#7a8696; font-weight:600; }
+.cancel-meta { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:12px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:14px; padding:12px 14px; margin:0 0 16px; }
+.cancel-meta .label { font-size:.75rem; text-transform:uppercase; letter-spacing:.16em; color:#64748b; font-weight:600; }
+.cancel-meta .value { font-weight:700; color:#0f172a; }
+.status-top { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+.status-label { font-weight:600; color:#e2e8f0; font-size:.9rem; }
+.status-pill { background:#fff; color:#0b3b5c; padding:4px 12px; border-radius:999px; font-size:.82rem; font-weight:700; letter-spacing:.02em; }
+.status-note { color:#e2e8f0; font-size:.9rem; }
+.status-actions .btn-outline { border-color:rgba(255,255,255,.4); color:#fff; background:transparent; }
+.status-actions .btn-outline:hover { background:rgba(255,255,255,.12); border-color:rgba(255,255,255,.6); }
+.subscription-grid-block { margin:24px 0 10px; }
+.subscription-grid-head { display:flex; align-items:flex-end; justify-content:space-between; gap:16px; margin-bottom:18px; }
+.subscription-grid-head h2 { margin:0; font-size:1.4rem; font-weight:700; }
+.subscription-grid { display:grid; gap:22px; grid-template-columns:repeat(auto-fit,minmax(250px,1fr)); }
+.tier-card {
+  background:#fff;
+  border:2px solid #dbe4ef;
+  border-radius:20px;
+  padding:22px 20px 20px;
+  box-shadow:0 14px 28px -22px rgba(15,23,42,.4);
+  display:flex;
+  flex-direction:column;
+  gap:16px;
+  position:relative;
+  overflow:hidden;
+}
+.tier-card:before { content:''; position:absolute; left:0; right:0; top:0; height:6px; background:linear-gradient(90deg,#0b3b5c,#1f6c92,#e07a5f); }
+.tier-card.current { border-color:#1d65c9; box-shadow:0 0 0 2px rgba(29,101,201,.18), 0 18px 30px -22px rgba(15,23,42,.45); }
+.tier-card.current:before { background:linear-gradient(90deg,#1d65c9,#38bdf8); }
+.tier-header { display:flex; flex-direction:column; gap:12px; }
+.tier-title-row { display:flex; align-items:center; justify-content:space-between; gap:10px; }
+.tier-header h3 { margin:0; font-size:1.25rem; font-weight:700; }
+.tier-flag { background:#e0f2fe; color:#0369a1; border-radius:999px; padding:4px 10px; font-size:.72rem; font-weight:700; letter-spacing:.06em; text-transform:uppercase; }
+.tier-price { display:flex; align-items:baseline; gap:8px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:10px 12px; }
 .price-main { font-size:1.6rem; font-weight:700; color:#0f172a; }
 .price-sub { font-size:.85rem; color:#64748b; font-weight:600; }
-.tier-benefits { list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:8px; }
+.tier-benefits { list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:10px; }
 .tier-benefits li { display:flex; gap:8px; align-items:flex-start; font-size:.92rem; color:#0f172a; }
 .benefit-dot { color:#16a34a; font-weight:700; }
 .tier-actions { margin-top:auto; }
 .subscription-notes { margin:18px 0 40px; }
+@media (max-width:900px) {
+  .subscription-hero-grid { grid-template-columns:1fr; }
+  .subscription-grid-head { align-items:flex-start; flex-direction:column; }
+}
+
+/* Payment success */
+.payment-success { padding: 36px 0 70px; display:flex; justify-content:center; }
+.success-card {
+  width:min(920px, 100%);
+  background:linear-gradient(145deg,#ffffff 0%, #f3f7fb 100%);
+  border:1px solid #dbe4ef;
+  border-radius:28px;
+  padding:32px 34px;
+  box-shadow:0 20px 48px -30px rgba(11,59,92,.45);
+  position:relative;
+  overflow:hidden;
+}
+.success-card:before {
+  content:'';
+  position:absolute;
+  inset:-30% auto auto -20%;
+  width:280px;
+  height:280px;
+  background:radial-gradient(circle, rgba(11,59,92,.15), transparent 65%);
+  filter:blur(8px);
+}
+.success-card:after {
+  content:'';
+  position:absolute;
+  right:-120px;
+  top:-120px;
+  width:260px;
+  height:260px;
+  background:radial-gradient(circle, rgba(224,122,95,.2), transparent 65%);
+  filter:blur(4px);
+}
+.success-header { display:flex; gap:22px; align-items:center; position:relative; z-index:1; }
+.success-icon {
+  width:90px;
+  height:90px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  border-radius:24px;
+  background:linear-gradient(145deg,#e8f1f8,#f4f9ff);
+  border:1px solid #d8e6f4;
+  box-shadow:0 12px 22px -16px rgba(11,59,92,.6);
+}
+.success-icon svg { width:56px; height:56px; }
+.success-copy h2 { margin:0 0 6px; font-size:clamp(1.6rem,3vw,2.2rem); font-weight:700; }
+.success-tag {
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  background:linear-gradient(135deg,#0b3b5c,#1f6c92);
+  color:#fff;
+  padding:4px 12px;
+  border-radius:999px;
+  font-size:.72rem;
+  font-weight:700;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+  margin-bottom:6px;
+}
+.success-details {
+  margin:22px 0 26px;
+  display:grid;
+  gap:12px;
+  grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+  position:relative;
+  z-index:1;
+}
+.detail-row {
+  display:flex;
+  gap:12px;
+  align-items:flex-start;
+  background:#ffffff;
+  border:1px solid #e2e8f0;
+  border-radius:18px;
+  padding:14px 14px 14px 12px;
+  box-shadow:0 12px 22px -20px rgba(15,23,42,.4);
+}
+.detail-icon {
+  width:40px;
+  height:40px;
+  border-radius:12px;
+  background:linear-gradient(145deg,#f0f6ff,#e8f1fb);
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  color:#0b3b5c;
+}
+.detail-icon svg { width:22px; height:22px; stroke:currentColor; fill:none; stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round; }
+.detail-title { font-weight:700; }
+.detail-sub { color:#64748b; font-size:.9rem; }
+.success-actions { display:flex; gap:12px; flex-wrap:wrap; position:relative; z-index:1; }
+.success-actions .btn { min-width:160px; justify-content:center; }
+@media (max-width:640px) {
+  .success-card { padding:26px 22px; }
+  .success-header { flex-direction:column; align-items:flex-start; }
+  .success-actions .btn { width:100%; }
+}
+
+/* Voucher panel */
+.voucher-panel { background:#ffffff; border:1px dashed #cbd5e1; border-radius:12px; padding:10px 12px; box-shadow:0 10px 20px -18px rgba(15,23,42,.35); }
+.btn-voucher {
+  background:linear-gradient(135deg,#0b3b5c,#1f6c92);
+  color:#fff;
+  border:none;
+  border-radius:999px;
+  padding:.6rem 1.4rem;
+  font-weight:700;
+  letter-spacing:.02em;
+  box-shadow:0 14px 26px -18px rgba(11,59,92,.65);
+}
+.btn-voucher:hover { color:#fff; transform:translateY(-1px); box-shadow:0 18px 30px -18px rgba(11,59,92,.75); }
+.btn-voucher .btn-icon { margin-right:.45rem; }
+.voucher-hint { font-size:.8rem; color:#6b7280; margin-top:8px; }
+
+/* Voucher page */
+.voucher-hero { display:flex; justify-content:space-between; gap:16px; align-items:center; padding:18px 22px; border-radius:18px; border:1px solid #e6e1da; background:linear-gradient(120deg,#ffffff,#f2ede6); box-shadow:0 14px 30px -24px rgba(15,23,42,.4); flex-wrap:wrap; }
+.voucher-title { margin:0; font-size:32px; font-weight:700; letter-spacing:.2px; }
+.voucher-eyebrow { text-transform:uppercase; letter-spacing:.22em; font-size:.7rem; color:#7a8696; font-weight:600; }
+.voucher-section { margin:24px 0; }
+.voucher-section h3 { font-size:1.2rem; font-weight:700; margin-bottom:12px; }
+.voucher-grid { display:grid; gap:16px; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); }
+.voucher-card { background:#fff; border:1px solid #e2e8f0; border-radius:16px; padding:16px; box-shadow:0 12px 24px -22px rgba(15,23,42,.35); display:flex; flex-direction:column; gap:10px; }
+.voucher-card.disabled { opacity:.6; filter:grayscale(0.2); background:#f8fafc; }
+.voucher-card.disabled .voucher-actions { pointer-events:none; }
+.voucher-code { font-weight:700; letter-spacing:.12em; font-size:.85rem; color:#0b3b5c; background:#eef4fb; border-radius:999px; padding:6px 12px; display:inline-flex; align-self:flex-start; }
+.voucher-amount { font-size:1.4rem; font-weight:700; color:#0f172a; }
+.voucher-meta { display:flex; justify-content:space-between; gap:8px; font-size:.85rem; color:#64748b; flex-wrap:wrap; }
+.voucher-actions { margin-top:auto; }
 
 /* === Clean UI refresh (soft, minimal polish) === */
 body.theme-fairprice {

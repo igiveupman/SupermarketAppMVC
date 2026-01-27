@@ -1,0 +1,63 @@
+<%- include('partials/header', { user, pageTitle: 'Refund Requests', currentPage: 'adminDashboard', messages: (typeof messages !== 'undefined' ? messages : []), errors: (typeof errors !== 'undefined' ? errors : []) }) %>
+<div class="container-wide">
+  <div class="admin-orders-header">
+    <div class="admin-orders-title">
+      <div class="eyebrow">Refund Requests</div>
+      <h2>Pending Reviews</h2>
+      <div class="subline">Approve or deny customer refund requests.</div>
+    </div>
+    <div class="admin-orders-actions">
+      <a class="btn btn-outline" href="/admin"><span class="btn-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M14 6l-6 6 6 6"></path></svg></span>Back to Dashboard</a>
+      <a class="btn btn-outline" href="/admin/users"><span class="btn-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M16 11a4 4 0 1 0-8 0"></path><path d="M4 20a8 8 0 0 1 16 0"></path><circle cx="12" cy="7" r="3"></circle></svg></span>Users</a>
+    </div>
+  </div>
+
+  <% if (!requests.length) { %>
+    <div class="alert alert-info">No pending refund requests.</div>
+  <% } else { %>
+    <div class="list-group">
+      <% requests.forEach((o) => { %>
+        <div class="list-group-item mb-3">
+          <div class="d-flex justify-content-between flex-wrap gap-2">
+            <div>
+              <strong>Order #<%= o.id %></strong> · <span class="text-muted"><%= new Date(o.refund_requested_at || o.created_at).toLocaleString() %></span>
+              <div class="small text-muted">User: <strong><%= o.username %></strong> (<%= o.email %>)</div>
+              <div class="small">Payment: <strong><%= (o.payment_provider || o.delivery_method || 'unknown').toUpperCase() %></strong></div>
+            </div>
+            <div class="text-end">
+              <div class="fw-semibold">Order Total: $<%= Number(o.total).toFixed(2) %></div>
+              <div class="small text-muted">Requested: $<%= Number(o.refund_request_amount || o.total).toFixed(2) %></div>
+              <a class="small" href="/admin/users/<%= o.user_id %>/orders">View User Orders</a>
+            </div>
+          </div>
+          <div class="mt-2">
+            <div class="small text-muted">Reason</div>
+            <div class="refund-reason"><%= o.refund_request_reason || 'No reason provided.' %></div>
+          </div>
+          <div class="d-flex align-items-center gap-2 flex-wrap mt-3">
+            <form action="/admin/orders/<%= o.id %>/refund/approve" method="post" class="d-flex align-items-center gap-2" onsubmit="return confirm('Approve and process this refund?');">
+              <input class="form-control form-control-sm" type="number" name="amount" step="0.01" min="0.01" max="<%= Number(o.total).toFixed(2) %>" value="<%= Number(o.refund_request_amount || o.total).toFixed(2) %>" style="max-width:120px;" />
+              <input class="form-control form-control-sm" type="text" name="note" placeholder="Approval note (optional)" style="max-width:240px;" />
+              <button class="btn btn-sm btn-outline-success" type="submit">Approve</button>
+            </form>
+            <form action="/admin/orders/<%= o.id %>/refund/deny" method="post" class="d-flex align-items-center gap-2" onsubmit="return confirm('Deny this refund request?');">
+              <input class="form-control form-control-sm" type="text" name="note" placeholder="Denial reason (optional)" style="max-width:240px;" />
+              <button class="btn btn-sm btn-outline-danger" type="submit">Deny</button>
+            </form>
+          </div>
+        </div>
+      <% }) %>
+    </div>
+  <% } %>
+</div>
+<%- include('partials/footer') %>
+<style>
+  .admin-orders-header { display:flex; align-items:center; justify-content:space-between; gap:16px; padding:18px 20px; border-radius:16px; background:linear-gradient(120deg,#ffffff,#f3efe9); border:1px solid #e6e1da; box-shadow:0 12px 28px -24px rgba(15,23,42,.4); margin: 10px 0 18px; flex-wrap:wrap; }
+  .admin-orders-title h2 { margin:0; font-size:28px; font-weight:700; letter-spacing:.2px; }
+  .admin-orders-title .eyebrow { text-transform:uppercase; letter-spacing:.2em; font-size:.7rem; color:#7a8696; font-weight:600; }
+  .admin-orders-title .subline { color:#667085; font-size:.95rem; }
+  .admin-orders-actions { display:flex; gap:10px; align-items:center; }
+  .admin-orders-actions form { margin:0; }
+  .refund-reason { background:#fff7ed; border:1px solid #fed7aa; padding:10px 12px; border-radius:12px; }
+  @media (max-width:720px){ .admin-orders-actions { width:100%; justify-content:flex-start; } }
+</style>

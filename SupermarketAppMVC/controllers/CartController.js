@@ -5,6 +5,7 @@ const Order = require('../models/Order');
 const db = require('../db');
 const netsQr = require('../services/nets');
 const { computeCartPricing } = require('../services/subscriptionPricing');
+const vouchers = require('../services/vouchers');
 
 // Helper: adjust product quantity in DB by delta (can be positive to restock or negative to reserve)
 function adjustStock(productId, delta) {
@@ -31,6 +32,27 @@ function adjustStock(productId, delta) {
       });
     });
   });
+}
+
+function snapshotCart(cart) {
+  return (cart || []).map((item) => ({
+    productId: item.productId,
+    productName: item.productName,
+    price: Number(item.price),
+    originalPrice: Number(item.originalPrice),
+    discountApplied: !!item.discountApplied,
+    quantity: Number(item.quantity) || 0,
+    image: item.image
+  }));
+}
+
+function snapshotVoucher(voucher) {
+  if (!voucher) return null;
+  return {
+    id: voucher.id,
+    code: voucher.code,
+    amount: Number(voucher.amount)
+  };
 }
 
 // Load cart items for a user from DB (used on login)
@@ -89,17 +111,25 @@ function clearCartDb(userId) {
 
 module.exports = {
   // Show current items in the user's cart
-  viewCart(req, res) {
+  async viewCart(req, res) {
     const cart = req.session.cart || [];
-    const pricing = computeCartPricing(cart, req.session.user);
+    const voucher = await vouchers.resolveAppliedVoucher(req);
+    const pricing = computeCartPricing(cart, req.session.user, voucher);
+    if (pricing.voucherRejected) {
+      req.session.applied_voucher = null;
+    }
     res.render('cart', { cart: pricing.items, pricing, user: req.session.user, messages: req.flash('success'), errors: req.flash('error') });
   },
   // Render payment method selection (dummy methods: PayNow, NETS, GrabPay, card)
-  paymentForm(req, res) {
+  async paymentForm(req, res) {
     const cart = req.session.cart || [];
     if (!cart.length) { req.flash('error', 'Your cart is empty.'); return res.redirect('/cart'); }
     // Pricing is computed server-side to keep totals consistent across methods.
-    const pricing = computeCartPricing(cart, req.session.user);
+    const voucher = await vouchers.resolveAppliedVoucher(req);
+    const pricing = computeCartPricing(cart, req.session.user, voucher);
+    if (pricing.voucherRejected) {
+      req.session.applied_voucher = null;
+    }
     res.render('paymentMethod', { cart: pricing.items, pricing, user: req.session.user, messages: req.flash('success'), errors: req.flash('error') });
   },
 
@@ -266,7 +296,8 @@ module.exports = {
   // Checkout: verify stock, decrement product quantities, clear cart, and record order
   // Finalizes an order after payment is confirmed.
   checkout(req, res) {
-    const cart = req.session.cart || [];
+    const hasSnapshot = !!req.session.checkout_cart && !!req.session.checkout_source;
+    const cart = hasSnapshot ? (req.session.checkout_cart || []) : (req.session.cart || []);
     if (!cart.length) {
       req.flash('error', 'Your cart is empty.');
       return res.redirect('/cart');
@@ -280,20 +311,34 @@ module.exports = {
         resolve(prod);
       });
     })))
-      .then((products) => {
-        // Recompute totals and item prices from latest DB values
+      .then(async (products) => {
+        // Recompute totals and item prices from the checkout snapshot (or DB fallback)
         const priceMap = new Map(products.map(p => [p.id, p]));
         const cartForPricing = cart.map((i) => {
           const prod = priceMap.get(i.productId);
-          const price = prod && prod.discount_price ? parseFloat(prod.discount_price) : parseFloat(prod.price);
+          const storedPrice = Number(i.price);
+          const fallbackPrice = prod && prod.discount_price ? parseFloat(prod.discount_price) : parseFloat(prod.price);
+          const price = Number.isFinite(storedPrice) && storedPrice > 0 ? storedPrice : fallbackPrice;
           return { productId: i.productId, quantity: i.quantity, price };
         });
         // Recompute totals at checkout time (authoritative).
-        const pricing = computeCartPricing(cartForPricing, req.session.user);
+        const voucher = req.session.checkout_voucher || await vouchers.resolveAppliedVoucher(req);
+        const pricing = computeCartPricing(cartForPricing, req.session.user, voucher);
+        if (pricing.voucherRejected) {
+          req.session.applied_voucher = null;
+        }
+        const nameMap = new Map(cart.map(i => [i.productId, i.productName]));
         const orderItems = pricing.items.map((i) => ({
           productId: i.productId,
           quantity: i.quantity,
           price: i.effectivePrice
+        }));
+        const snapshotItems = pricing.items.map((i) => ({
+          productId: i.productId,
+          productName: nameMap.get(i.productId) || 'Item',
+          quantity: i.quantity,
+          unitPrice: i.effectivePrice,
+          lineTotal: i.lineTotal
         }));
         // Persist the order with the payment method + delivery fee.
         Order.create({
@@ -301,7 +346,14 @@ module.exports = {
           total: pricing.total.toFixed(2),
           delivery_method: req.session.payment_method || 'card',
           delivery_address: req.session.checkout_address || '',
-          delivery_fee: pricing.deliveryFee.toFixed(2)
+          delivery_fee: pricing.deliveryFee.toFixed(2),
+          payment_provider: req.session.payment_provider || req.session.payment_method || null,
+          payment_reference: req.session.payment_reference || null,
+          payment_order_id: req.session.payment_order_id || null,
+          refund_status: null,
+          voucher_code: pricing.voucherCode || null,
+          voucher_amount: pricing.voucherAmount || null,
+          items_snapshot: JSON.stringify(snapshotItems)
         }, orderItems, (oErr, data) => {
           if (oErr) {
             console.error('Order log failed:', oErr);
@@ -309,8 +361,20 @@ module.exports = {
             console.log('Order stored id', data.orderId);
       // Store last order id for invoice link on success page
       req.session.lastOrderId = data.orderId;
+            if (data.orderId && req.session.applied_voucher) {
+              vouchers.redeemVoucher(req.session.applied_voucher.id, req.session.user.id, data.orderId)
+                .catch((e) => console.error('Failed to redeem voucher:', e));
+            }
           }
         });
+        req.session.payment_reference = null;
+        req.session.payment_order_id = null;
+        req.session.payment_provider = null;
+        req.session.applied_voucher = null;
+        req.session.checkout_cart = null;
+        req.session.checkout_voucher = null;
+        req.session.checkout_total = null;
+        req.session.checkout_source = null;
         // success: log the checkout so it can be undone later
         try {
           const fs = require('fs');
@@ -333,9 +397,34 @@ module.exports = {
           console.error('Failed to write checkout log:', e);
         }
 
-        // clear cart and redirect
-        req.session.cart = [];
-        clearCartDb(req.session.user.id).catch(()=>{});
+        // clear purchased items from cart and persist remaining items
+        const userId = req.session.user && req.session.user.id;
+        if (hasSnapshot && userId) {
+          const remainingMap = new Map();
+          (req.session.cart || []).forEach((item) => {
+            remainingMap.set(item.productId, { ...item });
+          });
+          cart.forEach((item) => {
+            const current = remainingMap.get(item.productId);
+            if (!current) return;
+            const newQty = Number(current.quantity) - Number(item.quantity);
+            if (newQty > 0) {
+              current.quantity = newQty;
+              remainingMap.set(item.productId, current);
+            } else {
+              remainingMap.delete(item.productId);
+            }
+          });
+          const remaining = Array.from(remainingMap.values());
+          req.session.cart = remaining;
+          clearCartDb(userId).catch(()=>{});
+          remaining.forEach((item) => {
+            setCartItem(userId, item.productId, item.quantity).catch(()=>{});
+          });
+        } else {
+          req.session.cart = [];
+          if (userId) clearCartDb(userId).catch(()=>{});
+        }
         // If coming from payment page or NETS flow, show success screen, else redirect
         // Render success page for explicit payment flows; otherwise redirect to shopping.
         if (req.path === '/purchase' || req.session.payment_flow === 'nets' || req.session.payment_flow === 'paypal' || req.session.payment_flow === 'stripe') {
@@ -367,6 +456,10 @@ module.exports = {
       req.flash('error', 'Stripe payment must be confirmed on this page.');
       return res.redirect('/purchase');
     }
+    if (method === 'paynow') {
+      req.flash('error', 'PayNow QR must be generated on this page.');
+      return res.redirect('/purchase');
+    }
     // Validate delivery info
     if (!delivery_address || !delivery_address.trim()) {
       req.flash('error', 'Please provide a delivery address.');
@@ -376,18 +469,69 @@ module.exports = {
     req.session.checkout_address = delivery_address.trim();
     req.session.checkout_contact = (delivery_contact || '').trim();
     req.session.payment_method = method;
+    req.session.payment_provider = method;
+    req.session.payment_reference = null;
+    req.session.payment_order_id = null;
 
     // NETS QR uses a separate flow; generate QR and wait for success callback
     // NETS QR: external flow; success callback will call checkout().
     if (method === 'nets') {
+      req.session.checkout_cart = snapshotCart(req.session.cart || []);
+      req.session.checkout_voucher = snapshotVoucher(req.session.applied_voucher);
+      req.session.checkout_source = 'nets';
       req.session.payment_flow = 'nets';
       return netsQr.generateQrCode(req, res);
     }
 
     // PayNow is simulated; reuse checkout logic.
+    req.session.checkout_cart = null;
+    req.session.checkout_voucher = null;
+    req.session.checkout_total = null;
+    req.session.checkout_source = null;
     module.exports.checkout(req, res);
   },
 
+};
+
+// Apply voucher code
+module.exports.applyVoucher = async function(req, res) {
+  const user = req.session.user;
+  if (!user) return res.redirect('/login');
+  const code = (req.body.code || '').trim().toUpperCase();
+  const returnTo = req.body.returnTo && /^\/.+/.test(req.body.returnTo) ? req.body.returnTo : '/cart';
+  if (!code) {
+    req.flash('error', 'Enter a voucher code.');
+    return res.redirect(returnTo);
+  }
+  try {
+    const voucher = await vouchers.findValidVoucherByCode(code, user.id);
+    if (!voucher) {
+      req.flash('error', 'Voucher is invalid or expired.');
+      return res.redirect(returnTo);
+    }
+    const cart = req.session.cart || [];
+    const basePricing = computeCartPricing(cart, req.session.user, null);
+    if (Number(voucher.amount) > Number(basePricing.discountedSubtotal || 0)) {
+      req.flash('error', 'Voucher amount exceeds the cost of products in your cart.');
+      return res.redirect(returnTo);
+    }
+    req.session.applied_voucher = { id: voucher.id, code: voucher.code, amount: Number(voucher.amount) };
+    req.session.voucher_opt_out = false;
+    req.flash('success', `Voucher applied: ${voucher.code} (-$${Number(voucher.amount).toFixed(2)})`);
+    return res.redirect(returnTo);
+  } catch (err) {
+    req.flash('error', 'Failed to apply voucher.');
+    return res.redirect(returnTo);
+  }
+};
+
+// Remove applied voucher
+module.exports.removeVoucher = function(req, res) {
+  const returnTo = req.body.returnTo && /^\/.+/.test(req.body.returnTo) ? req.body.returnTo : '/cart';
+  req.session.applied_voucher = null;
+  req.session.voucher_opt_out = true;
+  req.flash('success', 'Voucher removed.');
+  return res.redirect(returnTo);
 };
 
 // JSON API variant for programmatic checkout (returns JSON instead of rendering views)
@@ -408,7 +552,10 @@ module.exports.apiCheckout = function(req, res) {
   });
   Promise.all(cart.map(processItem))
     .then(() => {
-      const pricing = computeCartPricing(cart, req.session.user);
+      const pricing = computeCartPricing(cart, req.session.user, req.session.applied_voucher || null);
+      if (pricing.voucherRejected) {
+        req.session.applied_voucher = null;
+      }
       req.session.cart = [];
       clearCartDb(req.session.user.id).catch(()=>{});
       res.json({ success:true, message:'Checkout complete', total: pricing.total.toFixed(2), items: results });

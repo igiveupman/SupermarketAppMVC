@@ -13,8 +13,8 @@ const TIERS = [
     price: 0,
     benefits: [
       'Standard member pricing',
-      'Access to weekly deals',
-      'Order tracking and receipts'
+      'Order tracking and receipts',
+      'Digital invoices on every order'
     ]
   },
   {
@@ -23,8 +23,6 @@ const TIERS = [
     price: 5.9,
     benefits: [
       'Everything in Basic',
-      '5% off storewide',
-      'Priority checkout lane',
       'Free delivery over $40'
     ]
   },
@@ -34,10 +32,8 @@ const TIERS = [
     price: 12.9,
     benefits: [
       'Everything in Essential',
-      '10% off storewide',
       'Free delivery on all orders',
-      'Monthly exclusive voucher',
-      'Priority support'
+      'Monthly voucher added to your account'
     ]
   }
 ];
@@ -105,10 +101,31 @@ module.exports = {
     const billingDate = (currentTierId !== 'basic')
       ? nextBillingDate(user.subscription_started_at || new Date())
       : null;
+    const cancellationEffective = user.subscription_cancel_effective_at
+      ? new Date(user.subscription_cancel_effective_at)
+      : null;
     res.render('subscription', {
       user,
       tiers,
       currentTier: TIERS.find((t) => t.id === currentTierId) || TIERS[0],
+      billingDate,
+      cancellationEffective,
+      messages: req.flash('success') || [],
+      errors: req.flash('error') || []
+    });
+  },
+
+  // Render cancellation reason form
+  cancelForm(req, res) {
+    const user = req.session.user;
+    if (!user || !user.subscription_tier || user.subscription_tier === 'basic') {
+      req.flash('error', 'You are already on the Basic tier.');
+      return res.redirect('/subscription');
+    }
+    const billingDate = nextBillingDate(user.subscription_started_at || new Date());
+    res.render('subscriptionCancel', {
+      user,
+      currentTier: getTierById(user.subscription_tier) || TIERS[0],
       billingDate,
       messages: req.flash('success') || [],
       errors: req.flash('error') || []
@@ -156,6 +173,10 @@ module.exports = {
     }
     if (method === 'stripe') {
       req.flash('error', 'Stripe payment must be confirmed on this page.');
+      return res.redirect('/subscription/checkout?tier=' + selected.id);
+    }
+    if (method === 'paynow') {
+      req.flash('error', 'PayNow QR must be generated on this page.');
       return res.redirect('/subscription/checkout?tier=' + selected.id);
     }
     // NETS QR: external flow; success callback will trigger complete().
@@ -222,15 +243,25 @@ module.exports = {
       req.flash('error', 'You are already on the Basic tier.');
       return res.redirect('/subscription');
     }
-    User.updateSubscription(user.id, 'basic', 0, null, (err) => {
+    const reason = (req.body.reason || '').trim();
+    if (!reason || reason.length < 10) {
+      req.flash('error', 'Please provide a brief cancellation reason (min 10 characters).');
+      return res.redirect('/subscription/cancel');
+    }
+    const cancelledAt = new Date();
+    const effectiveAt = user.subscription_started_at ? new Date(user.subscription_started_at) : null;
+    if (effectiveAt && !Number.isNaN(effectiveAt.getTime())) {
+      effectiveAt.setMonth(effectiveAt.getMonth() + 1);
+    }
+    User.cancelSubscription(user.id, reason, cancelledAt, effectiveAt || null, (err) => {
       if (err) {
         req.flash('error', 'Failed to cancel subscription.');
         return res.redirect('/subscription');
       }
-      req.session.user.subscription_tier = 'basic';
-      req.session.user.subscription_price = 0;
-      req.session.user.subscription_started_at = null;
-      req.flash('success', 'Subscription canceled. You are now on Basic.');
+      req.session.user.subscription_cancel_reason = reason;
+      req.session.user.subscription_cancelled_at = cancelledAt;
+      req.session.user.subscription_cancel_effective_at = effectiveAt || null;
+      req.flash('success', 'Subscription canceled. Your benefits remain until the end of the current billing month.');
       return res.redirect('/subscription');
     });
   }

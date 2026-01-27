@@ -1,0 +1,23 @@
+<%- include('partials/header', { user, pageTitle: 'PayNow Return', currentPage: 'cart' }) %>
+<div class="container py-5">
+  <div class="card p-4 shadow-sm">
+    <h4 class="mb-2">Payment authorized</h4>
+    <p class="text-muted mb-3">You can close this tab. Your order will be finalized in the original checkout page.</p>
+    <a class="btn btn-primary" href="/purchase">Back to Checkout</a>
+  </div>
+</div>
+<script>
+  (function() {
+    try {
+      if (window.opener && !window.opener.closed) {
+        window.opener.focus();
+        window.close();
+        return;
+      }
+    } catch (e) {}
+    setTimeout(function() {
+      window.location.href = '/purchase';
+    }, 1500);
+  })();
+</script>
+<%- include('partials/footer') %>

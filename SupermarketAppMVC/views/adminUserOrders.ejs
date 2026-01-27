@@ -20,6 +20,9 @@
     <div class="list-group">
       <% orders.forEach((o, idx) => { %>
         <% const orderNumber = typeof o.displayNumber !== 'undefined' ? o.displayNumber : (orders.length - idx); %>
+        <% const provider = (o.payment_provider || o.delivery_method || '').toLowerCase(); %>
+        <% const isRefunded = o.refund_status && String(o.refund_status).toLowerCase() === 'refunded'; %>
+        <% const reqStatus = o.refund_request_status ? String(o.refund_request_status).toLowerCase() : ''; %>
         <div class="list-group-item mb-3">
           <div class="d-flex justify-content-between">
             <div>
@@ -43,12 +46,54 @@
                 <tr>
                   <td><%= it.productName %></td>
                   <td class="text-end"><%= it.quantity %></td>
-                  <td class="text-end">$<%= Number(it.price).toFixed(2) %></td>
-                  <td class="text-end">$<%= Number(it.price * it.quantity).toFixed(2) %></td>
+                  <td class="text-end">$<%= (Number(it.total_price || 0) / Number(it.quantity || 1)).toFixed(2) %></td>
+                  <td class="text-end">$<%= Number(it.total_price || 0).toFixed(2) %></td>
                 </tr>
               <% }) %>
             </tbody>
           </table>
+          <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div class="small text-muted">
+              Payment: <strong><%= (o.payment_provider || o.delivery_method || 'unknown').toUpperCase() %></strong>
+              <% if (o.payment_reference) { %>
+                <span class="ms-2">Ref: <%= o.payment_reference %></span>
+              <% } %>
+              <% if (o.refund_status) { %>
+                <span class="badge bg-success ms-2">Refunded</span>
+              <% } else if (reqStatus === 'pending') { %>
+                <span class="badge bg-warning text-dark ms-2">Refund Requested</span>
+              <% } %>
+            </div>
+            <% if (o.refund_status) { %>
+              <div class="small">
+                Refund: $<%= Number(o.refund_amount || 0).toFixed(2) %>
+                <% if (o.refunded_at) { %>
+                  <span class="text-muted ms-2"><%= new Date(o.refunded_at).toLocaleString() %></span>
+                <% } %>
+              </div>
+            <% } else if (reqStatus === 'pending') { %>
+              <div class="w-100 small text-muted mt-2">Request: <%= o.refund_request_reason || 'No reason provided' %></div>
+              <div class="d-flex align-items-center gap-2 flex-wrap mt-2">
+                <form action="/admin/orders/<%= o.id %>/refund/approve" method="post" class="d-flex align-items-center gap-2" onsubmit="return confirm('Approve and process this refund?');">
+                  <input class="form-control form-control-sm" type="number" name="amount" step="0.01" min="0.01" max="<%= Number(o.total).toFixed(2) %>" value="<%= Number(o.refund_request_amount || o.total).toFixed(2) %>" style="max-width:120px;" />
+                  <input class="form-control form-control-sm" type="text" name="note" placeholder="Approval note (optional)" style="max-width:220px;" />
+                  <button class="btn btn-sm btn-outline-success" type="submit">Approve</button>
+                </form>
+                <form action="/admin/orders/<%= o.id %>/refund/deny" method="post" class="d-flex align-items-center gap-2" onsubmit="return confirm('Deny this refund request?');">
+                  <input class="form-control form-control-sm" type="text" name="note" placeholder="Denial reason (optional)" style="max-width:220px;" />
+                  <button class="btn btn-sm btn-outline-danger" type="submit">Deny</button>
+                </form>
+              </div>
+            <% } else if (provider === 'stripe' || provider === 'paypal') { %>
+              <form action="/admin/orders/<%= o.id %>/refund" method="post" class="d-flex align-items-center gap-2" onsubmit="return confirm('Refund this order?');">
+                <input class="form-control form-control-sm" type="number" name="amount" step="0.01" min="0.01" max="<%= Number(o.total).toFixed(2) %>" value="<%= Number(o.total).toFixed(2) %>" style="max-width:120px;" />
+                <input class="form-control form-control-sm" type="text" name="note" placeholder="Reason (optional)" style="max-width:220px;" />
+                <button class="btn btn-sm btn-outline-danger" type="submit">Refund</button>
+              </form>
+            <% } else { %>
+              <span class="small text-muted">Refunds for NETS/PayNow are manual.</span>
+            <% } %>
+          </div>
         </div>
       <% }) %>
     </div>

@@ -1,0 +1,95 @@
+<%- include('partials/header', { user, pageTitle: 'Vouchers', currentPage: 'adminDashboard', messages: (typeof messages !== 'undefined' ? messages : []), errors: (typeof errors !== 'undefined' ? errors : []) }) %>
+<div class="container-wide">
+  <div class="admin-orders-header">
+    <div class="admin-orders-title">
+      <div class="eyebrow">Vouchers</div>
+      <h2>Create & Manage</h2>
+      <div class="subline">Issue fixed-amount vouchers for cart discounts.</div>
+    </div>
+    <div class="admin-orders-actions">
+      <a class="btn btn-outline" href="/admin"><span class="btn-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M14 6l-6 6 6 6"></path></svg></span>Back to Dashboard</a>
+    </div>
+  </div>
+
+  <div class="voucher-grid">
+    <form class="voucher-card" action="/admin/vouchers" method="post">
+      <h4>Create Voucher</h4>
+      <div class="row g-3">
+        <div class="col-md-6">
+          <label class="form-label">Code (optional)</label>
+          <input class="form-control" type="text" name="code" placeholder="AUTO-GENERATE" />
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Amount ($)</label>
+          <input class="form-control" type="number" name="amount" step="0.01" min="0.01" required />
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Expires (days)</label>
+          <input class="form-control" type="number" name="expires_in_days" min="1" value="30" />
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">User ID (optional)</label>
+          <input class="form-control" type="number" name="user_id" min="1" placeholder="Leave blank for global voucher" />
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Max Uses</label>
+          <input class="form-control" type="number" name="max_uses" min="1" value="1" />
+        </div>
+      </div>
+      <button class="btn btn-primary mt-3" type="submit">Create Voucher</button>
+    </form>
+
+    <div class="voucher-card">
+      <h4>Recent Vouchers</h4>
+      <% if (!vouchers.length) { %>
+        <div class="alert alert-info mt-2">No vouchers created yet.</div>
+      <% } else { %>
+        <div class="table-responsive">
+          <table class="table table-sm table-clean mt-2">
+            <thead>
+              <tr>
+                <th>Code</th>
+                <th>Amount</th>
+                <th>User</th>
+                <th>Uses</th>
+                <th>Expires</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% vouchers.forEach(v => { %>
+                <tr>
+                  <td><strong><%= v.code %></strong></td>
+                  <td>$<%= Number(v.amount).toFixed(2) %></td>
+                  <td><%= v.user_id ? ('#' + v.user_id) : 'Global' %></td>
+                  <td><%= Number(v.redeemed_count || 0) %>/<%= Number(v.max_uses || 1) %></td>
+                  <td><%= new Date(v.expires_at).toLocaleDateString() %></td>
+                  <td>
+                    <% if (!v.active) { %>
+                      <span class="badge bg-secondary">Inactive</span>
+                    <% } else if (new Date(v.expires_at) < new Date()) { %>
+                      <span class="badge bg-danger">Expired</span>
+                    <% } else { %>
+                      <span class="badge bg-success">Active</span>
+                    <% } %>
+                  </td>
+                </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        </div>
+      <% } %>
+    </div>
+  </div>
+</div>
+<%- include('partials/footer') %>
+<style>
+  .admin-orders-header { display:flex; align-items:center; justify-content:space-between; gap:16px; padding:18px 20px; border-radius:16px; background:linear-gradient(120deg,#ffffff,#f3efe9); border:1px solid #e6e1da; box-shadow:0 12px 28px -24px rgba(15,23,42,.4); margin: 10px 0 18px; flex-wrap:wrap; }
+  .admin-orders-title h2 { margin:0; font-size:28px; font-weight:700; letter-spacing:.2px; }
+  .admin-orders-title .eyebrow { text-transform:uppercase; letter-spacing:.2em; font-size:.7rem; color:#7a8696; font-weight:600; }
+  .admin-orders-title .subline { color:#667085; font-size:.95rem; }
+  .admin-orders-actions { display:flex; gap:10px; align-items:center; }
+  .voucher-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(320px,1fr)); gap:18px; }
+  .voucher-card { background:#fff; border:1px solid #e6e1da; border-radius:18px; padding:18px; box-shadow:0 12px 24px -24px rgba(15,23,42,.35); }
+  .voucher-card h4 { margin:0 0 10px; font-weight:700; }
+</style>

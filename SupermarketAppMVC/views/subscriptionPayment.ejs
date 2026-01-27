@@ -44,9 +44,15 @@
     <div class="small text-muted mt-2">Payments are processed securely by Stripe.</div>
   </div>
   <div id="paynowSection" class="border rounded p-3 mb-3 wallet-section" data-method="paynow" style="display:none; background:#fff;">
-    <p class="mb-2 fw-semibold">Scan the PayNow QR code with your banking app to complete payment.</p>
-    <img src="/images/qr.png" alt="PayNow QR Code" style="max-width:220px; width:100%; border:1px solid #e2e8f0; border-radius:12px; padding:10px; background:#f8fafc;" />
-    <p class="small text-muted mt-2">After paying, click Confirm Payment to finalize your subscription.</p>
+    <p class="mb-2 fw-semibold">PayNow QR payment (Stripe)</p>
+    <div class="small text-muted mb-2">Generate a QR code and scan it with your bank app to pay.</div>
+    <button type="button" class="btn btn-outline btn-sm" id="subPaynowStartBtn">Generate PayNow QR</button>
+    <div class="mt-3 d-none" id="subPaynowQrWrap">
+      <img id="subPaynowQrImage" alt="PayNow QR Code" style="max-width:220px; width:100%; border:1px solid #e2e8f0; border-radius:12px; padding:10px; background:#f8fafc;" />
+      <div class="small text-muted mt-2">Or open the instructions: <a href="#" target="_blank" rel="noreferrer" id="subPaynowQrLink">PayNow instructions</a></div>
+      <div class="small text-muted mt-1" id="subPaynowExpires"></div>
+    </div>
+    <div class="small mt-2" id="subPaynowStatus"></div>
   </div>
   <div id="netsSection" class="border rounded p-3 mb-3 wallet-section" data-method="nets" style="display:none; background:#fff;">
     <p class="mb-2 fw-semibold">NETS QR will be generated after you click Confirm Payment.</p>
@@ -71,6 +77,12 @@
     const walletSections = document.querySelectorAll('.wallet-section');
     const confirmBtn = document.getElementById('confirmPaymentBtn');
     const paypalContainer = document.getElementById('paypal-button-container');
+    const subPaynowStartBtn = document.getElementById('subPaynowStartBtn');
+    const subPaynowQrWrap = document.getElementById('subPaynowQrWrap');
+    const subPaynowQrImage = document.getElementById('subPaynowQrImage');
+    const subPaynowQrLink = document.getElementById('subPaynowQrLink');
+    const subPaynowStatus = document.getElementById('subPaynowStatus');
+    const subPaynowExpires = document.getElementById('subPaynowExpires');
     const stripeKey = "<%= process.env.STRIPE_PUBLISHABLE_KEY || '' %>";
     const stripeIntentInput = document.getElementById('stripePaymentIntent');
     const paymentForm = document.getElementById('subscriptionPaymentForm');
@@ -120,16 +132,30 @@
       }).render('#paypal-button-container');
     }
 
+    let subPaynowPoll;
+    function stopSubPaynowPoll() {
+      if (subPaynowPoll) {
+        clearInterval(subPaynowPoll);
+        subPaynowPoll = null;
+      }
+    }
     function sync(){
       const method = paynowRadio.checked ? 'paynow' : (netsRadio.checked ? 'nets' : (paypalRadio.checked ? 'paypal' : 'stripe'));
       walletSections.forEach(section => {
         section.style.display = section.dataset.method === method ? 'block' : 'none';
       });
-      if (method === 'paypal') {
+      if (method === 'paypal' || method === 'paynow') {
         confirmBtn.style.display = 'none';
-        renderPaypalButtons();
+        if (method === 'paypal') {
+          renderPaypalButtons();
+        }
       } else {
         confirmBtn.style.display = 'inline-block';
+      }
+      if (method !== 'paynow') {
+        stopSubPaynowPoll();
+        if (subPaynowStartBtn) subPaynowStartBtn.disabled = false;
+        if (subPaynowStatus) subPaynowStatus.textContent = '';
       }
     }
     stripeRadio.addEventListener('change', sync);
@@ -137,6 +163,107 @@
     netsRadio.addEventListener('change', sync);
     paypalRadio.addEventListener('change', sync);
     sync();
+
+    async function pollSubPaynowStatus(intentId) {
+      stopSubPaynowPoll();
+      subPaynowPoll = setInterval(async () => {
+        try {
+          const res = await fetch(`/api/stripe/intent-status/${intentId}`);
+          const data = await res.json();
+          if (data.status === 'succeeded') {
+            stopSubPaynowPoll();
+            subPaynowStatus.textContent = 'Payment confirmed. Activating subscription...';
+            stripeIntentInput.value = intentId;
+            paymentForm.action = '/stripe/subscription/complete';
+            paymentForm.submit();
+          } else if (data.status === 'canceled' || data.status === 'requires_payment_method') {
+            stopSubPaynowPoll();
+            subPaynowStatus.textContent = 'Payment failed or expired. Please generate a new QR code.';
+            subPaynowStartBtn.disabled = false;
+          }
+        } catch (e) {
+          stopSubPaynowPoll();
+          subPaynowStatus.textContent = 'Unable to check payment status.';
+          subPaynowStartBtn.disabled = false;
+        }
+      }, 3000);
+    }
+
+    if (subPaynowStartBtn) {
+      subPaynowStartBtn.addEventListener('click', async () => {
+        subPaynowStartBtn.disabled = true;
+        subPaynowStatus.textContent = 'Generating PayNow QR code...';
+        subPaynowQrWrap.classList.add('d-none');
+        try {
+          const res = await fetch('/api/stripe/subscription-paynow-intent', { method: 'post' });
+          let data = null;
+          try {
+            data = await res.json();
+          } catch (e) {
+            data = { error: await res.text() };
+          }
+          if (!res.ok || !data.intentId || !data.clientSecret) {
+            subPaynowStatus.textContent = data.message || data.error || `Unable to generate PayNow QR (HTTP ${res.status}).`;
+            subPaynowStartBtn.disabled = false;
+            return;
+          }
+          if (!stripeInstance) {
+            subPaynowStatus.textContent = 'Stripe is not configured.';
+            subPaynowStartBtn.disabled = false;
+            return;
+          }
+          const returnUrl = window.location.origin + '/paynow/return';
+          const confirmResult = await stripeInstance.confirmPayNowPayment(data.clientSecret, {
+            payment_method: {
+              billing_details: {
+                name: "<%= user && user.username ? user.username.replace(/\"/g, '') : 'Customer' %>",
+                email: "<%= user && user.email ? user.email.replace(/\"/g, '') : '' %>"
+              }
+            },
+            return_url: returnUrl
+          });
+          if (confirmResult.error) {
+            subPaynowStatus.textContent = confirmResult.error.message || 'PayNow confirmation failed.';
+            subPaynowStartBtn.disabled = false;
+            return;
+          }
+          const pi = confirmResult.paymentIntent;
+          if (pi && pi.status === 'succeeded') {
+            subPaynowStatus.textContent = 'Payment confirmed. Activating subscription...';
+            stripeIntentInput.value = data.intentId;
+            paymentForm.action = '/stripe/subscription/complete';
+            paymentForm.submit();
+            return;
+          }
+          const nextAction = pi && pi.next_action ? pi.next_action : null;
+          const qr = nextAction && (nextAction.paynow_display_qr_code || nextAction.display_qr_code) ? (nextAction.paynow_display_qr_code || nextAction.display_qr_code) : null;
+          if (qr && qr.image_url) {
+            subPaynowQrImage.src = qr.image_url;
+            subPaynowQrLink.href = qr.hosted_instructions_url || '#';
+            subPaynowQrWrap.classList.remove('d-none');
+            if (qr.expires_at) {
+              const exp = new Date(qr.expires_at * 1000);
+              subPaynowExpires.textContent = `Expires at: ${exp.toLocaleTimeString()}`;
+            } else {
+              subPaynowExpires.textContent = '';
+            }
+            subPaynowStatus.textContent = 'Waiting for payment confirmation...';
+            pollSubPaynowStatus(data.intentId);
+            return;
+          }
+          if (nextAction && nextAction.redirect_to_url && nextAction.redirect_to_url.url) {
+            subPaynowStatus.textContent = 'Redirecting to PayNow instructions...';
+            window.location.href = nextAction.redirect_to_url.url;
+            return;
+          }
+          subPaynowStatus.textContent = 'PayNow action not available. Please try again.';
+          subPaynowStartBtn.disabled = false;
+        } catch (e) {
+          subPaynowStatus.textContent = 'Unable to start PayNow payment.';
+          subPaynowStartBtn.disabled = false;
+        }
+      });
+    }
 
     // Stripe card flow: create PaymentIntent -> confirm -> submit to server for verification.
     paymentForm.addEventListener('submit', async (event) => {

@@ -10,7 +10,7 @@ const User = {
   // List all users (admin page)
   getAll(callback) {
     db.query(
-      'SELECT id, username, email, address, contact, role, free_delivery, subscription_tier, subscription_price, subscription_started_at FROM users',
+      'SELECT id, username, email, address, contact, role, free_delivery, subscription_tier, subscription_price, subscription_started_at, subscription_cancel_reason, subscription_cancelled_at, subscription_cancel_effective_at FROM users',
       (err, results) => callback(err, results)
     );
   },
@@ -18,7 +18,7 @@ const User = {
   // Fetch one user by id
   getById(id, callback) {
     db.query(
-      'SELECT id, username, email, address, contact, role, free_delivery, subscription_tier, subscription_price, subscription_started_at FROM users WHERE id = ?',
+      'SELECT id, username, email, address, contact, role, free_delivery, subscription_tier, subscription_price, subscription_started_at, subscription_cancel_reason, subscription_cancelled_at, subscription_cancel_effective_at FROM users WHERE id = ?',
       [id],
       (err, results) => {
         if (err) return callback(err);
@@ -67,8 +67,17 @@ const User = {
 
   // Update a user's subscription tier
   updateSubscription(id, tier, price, startedAt, callback) {
-    const sql = 'UPDATE users SET subscription_tier = ?, subscription_price = ?, subscription_started_at = ? WHERE id = ?';
+    const sql = 'UPDATE users SET subscription_tier = ?, subscription_price = ?, subscription_started_at = ?, subscription_cancel_reason = NULL, subscription_cancelled_at = NULL, subscription_cancel_effective_at = NULL WHERE id = ?';
     db.query(sql, [tier, price, startedAt || null, id], (err, result) => {
+      if (err) return callback(err);
+      callback(null, { changedRows: result.changedRows, affectedRows: result.affectedRows });
+    });
+  },
+
+  // Cancel subscription with reason
+  cancelSubscription(id, reason, cancelledAt, effectiveAt, callback) {
+    const sql = 'UPDATE users SET subscription_cancel_reason = ?, subscription_cancelled_at = ?, subscription_cancel_effective_at = ? WHERE id = ?';
+    db.query(sql, [reason || null, cancelledAt || null, effectiveAt || null, id], (err, result) => {
       if (err) return callback(err);
       callback(null, { changedRows: result.changedRows, affectedRows: result.affectedRows });
     });

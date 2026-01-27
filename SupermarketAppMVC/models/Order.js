@@ -10,8 +10,21 @@ const Order = {
   create(order, items, callback) {
     db.beginTransaction((tErr) => {
       if (tErr) return callback(tErr);
-      const sql = 'INSERT INTO orders (user_id, total, delivery_method, delivery_address, delivery_fee, created_at) VALUES (?, ?, ?, ?, ?, NOW())';
-      const params = [order.user_id, order.total, order.delivery_method, order.delivery_address, order.delivery_fee];
+      const sql = 'INSERT INTO orders (user_id, total, delivery_method, delivery_address, delivery_fee, payment_provider, payment_reference, payment_order_id, refund_status, voucher_code, voucher_amount, items_snapshot, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())';
+      const params = [
+        order.user_id,
+        order.total,
+        order.delivery_method,
+        order.delivery_address,
+        order.delivery_fee,
+        order.payment_provider || null,
+        order.payment_reference || null,
+        order.payment_order_id || null,
+        order.refund_status || null,
+        order.voucher_code || null,
+        order.voucher_amount || null,
+        order.items_snapshot || null
+      ];
       db.query(sql, params, (err, result) => {
         if (err) {
           console.error('Order insert failed:', { order, err });
@@ -100,6 +113,54 @@ const Order = {
           callback(null, { affectedRows: result.affectedRows });
         });
       });
+    });
+  }
+  ,
+  // Update refund status and metadata for an order
+  markRefund(orderId, data, callback) {
+    const sql = 'UPDATE orders SET refund_status = ?, refund_reference = ?, refund_amount = ?, refunded_at = ? WHERE id = ?';
+    const params = [
+      data.refund_status || null,
+      data.refund_reference || null,
+      data.refund_amount || null,
+      data.refunded_at || null,
+      orderId
+    ];
+    db.query(sql, params, (err, result) => {
+      if (err) return callback(err);
+      callback(null, result);
+    });
+  }
+  ,
+  // Create a refund request for an order (customer-side)
+  setRefundRequest(orderId, userId, data, callback) {
+    const sql = 'UPDATE orders SET refund_request_status = ?, refund_request_reason = ?, refund_request_amount = ?, refund_requested_at = ? WHERE id = ? AND user_id = ?';
+    const params = [
+      data.refund_request_status || null,
+      data.refund_request_reason || null,
+      data.refund_request_amount || null,
+      data.refund_requested_at || null,
+      orderId,
+      userId
+    ];
+    db.query(sql, params, (err, result) => {
+      if (err) return callback(err);
+      callback(null, result);
+    });
+  }
+  ,
+  // Update refund request status (admin decision)
+  updateRefundRequestStatus(orderId, data, callback) {
+    const sql = 'UPDATE orders SET refund_request_status = ?, refund_request_note = ?, refund_decision_at = ? WHERE id = ?';
+    const params = [
+      data.refund_request_status || null,
+      data.refund_request_note || null,
+      data.refund_decision_at || null,
+      orderId
+    ];
+    db.query(sql, params, (err, result) => {
+      if (err) return callback(err);
+      callback(null, result);
     });
   }
 };

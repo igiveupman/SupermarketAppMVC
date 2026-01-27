@@ -1,0 +1,31 @@
+<%- include('partials/header', { user, pageTitle: 'Cancel Subscription', currentPage: 'subscription', messages, errors }) %>
+<section class="cancel-subscription">
+  <div class="cancel-card">
+    <div class="cancel-header">
+      <div>
+        <div class="cancel-eyebrow">Subscription</div>
+        <h2>Cancel <%= currentTier.name %> plan</h2>
+        <p class="text-muted">Tell us why you’re cancelling. You won’t be billed again unless another month has started.</p>
+      </div>
+    </div>
+    <div class="cancel-meta">
+      <div>
+        <div class="label">Current plan</div>
+        <div class="value"><%= currentTier.name %></div>
+      </div>
+      <div>
+        <div class="label">Next billing date</div>
+        <div class="value"><%= billingDate || 'N/A' %></div>
+      </div>
+    </div>
+    <form action="/subscription/cancel" method="POST">
+      <label class="form-label fw-semibold">Cancellation reason</label>
+      <textarea name="reason" class="form-control" rows="4" placeholder="Share what didn’t work for you (min 10 characters)" required minlength="10"></textarea>
+      <div class="d-flex gap-2 mt-3 flex-wrap">
+        <button type="submit" class="btn btn-outline-danger">Confirm Cancellation</button>
+        <a href="/subscription" class="btn btn-outline">Back to Subscriptions</a>
+      </div>
+    </form>
+  </div>
+</section>
+<%- include('partials/footer') %>

@@ -1,5 +1,6 @@
 const axios = require('axios');
 const { computeCartPricing } = require('./subscriptionPricing');
+const vouchers = require('./vouchers');
 
 function getCourseInitId() {
   try {
@@ -28,7 +29,11 @@ exports.generateQrCode = async (req, res) => {
     });
   }
 
-  const pricing = computeCartPricing(cart, req.session.user);
+  const voucher = await vouchers.resolveAppliedVoucher(req);
+  const pricing = computeCartPricing(cart, req.session.user, voucher);
+  if (pricing.voucherRejected) {
+    req.session.applied_voucher = null;
+  }
   const cartTotal = pricing.total.toFixed(2);
   try {
     const requestBody = {
@@ -56,6 +61,10 @@ exports.generateQrCode = async (req, res) => {
       qrData.qr_code
     ) {
       const txnRetrievalRef = qrData.txn_retrieval_ref;
+      if (req && req.session) {
+        req.session.payment_provider = 'nets';
+        req.session.payment_reference = txnRetrievalRef;
+      }
       const courseInitId = getCourseInitId();
       const webhookUrl = `https://sandbox.nets.openapipaas.com/api/v1/common/payments/nets/webhook?txn_retrieval_ref=${txnRetrievalRef}&course_init_id=${courseInitId}`;
       return res.render('netsQr', {
@@ -135,6 +144,10 @@ exports.generateQrCodeForAmount = async (req, res, amount) => {
       qrData.qr_code
     ) {
       const txnRetrievalRef = qrData.txn_retrieval_ref;
+      if (req && req.session) {
+        req.session.payment_provider = 'nets';
+        req.session.payment_reference = txnRetrievalRef;
+      }
       const courseInitId = getCourseInitId();
       const webhookUrl = `https://sandbox.nets.openapipaas.com/api/v1/common/payments/nets/webhook?txn_retrieval_ref=${txnRetrievalRef}&course_init_id=${courseInitId}`;
       return res.render('netsQr', {

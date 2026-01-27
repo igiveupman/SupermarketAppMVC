@@ -34,6 +34,9 @@ CREATE TABLE `users` (
   `subscription_tier` varchar(20) NOT NULL DEFAULT 'basic',
   `subscription_price` decimal(10,2) NOT NULL DEFAULT '0.00',
   `subscription_started_at` datetime DEFAULT NULL,
+  `subscription_cancel_reason` text DEFAULT NULL,
+  `subscription_cancelled_at` datetime DEFAULT NULL,
+  `subscription_cancel_effective_at` datetime DEFAULT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -44,7 +47,7 @@ CREATE TABLE `users` (
 
 LOCK TABLES `users` WRITE;
 /*!40000 ALTER TABLE `users` DISABLE KEYS */;
-INSERT INTO `users` VALUES (1,'Peter Lim','peter@peter.com','7c4a8d09ca3762af61e59520943dc26494f8941b','Woodlands Ave 2','98765432','admin',1,'basic',0.00,NULL),(2,'Mary Tan','mary@mary.com','7c4a8d09ca3762af61e59520943dc26494f8941b','Tampines Ave 1','91325192','user',0,'basic',0.00,NULL),(3,'bobochan','bobochan@gmail.com','7c4a8d09ca3762af61e59520943dc26494f8941b','Woodlands','98765432','user',0,'basic',0.00,NULL),(4,'sarahlee','sarahlee@gmail.com','7c4a8d09ca3762af61e59520943dc26494f8941b','Woodlands','98765432','user',0,'basic',0.00,NULL),(5,'john','pon@pon.com','7c4a8d09ca3762af61e59520943dc26494f8941b','123 John Street','12345678','user',0,'basic',0.00,NULL),(7,'Matthew','mat@mat.com','7c4a8d09ca3762af61e59520943dc26494f8941b','Kingsley Avenue 10','92199312','user',0,'basic',0.00,NULL),(8,'Ken','ken@ken.com','7c4a8d09ca3762af61e59520943dc26494f8941b','jurong avenue 1','82313731','user',0,'basic',0.00,NULL);
+INSERT INTO `users` VALUES (1,'Peter Lim','peter@peter.com','7c4a8d09ca3762af61e59520943dc26494f8941b','Woodlands Ave 2','98765432','admin',1,'basic',0.00,NULL,NULL,NULL,NULL),(2,'Mary Tan','mary@mary.com','7c4a8d09ca3762af61e59520943dc26494f8941b','Tampines Ave 1','91325192','user',0,'basic',0.00,NULL,NULL,NULL,NULL),(3,'bobochan','bobochan@gmail.com','7c4a8d09ca3762af61e59520943dc26494f8941b','Woodlands','98765432','user',0,'basic',0.00,NULL,NULL,NULL,NULL),(4,'sarahlee','sarahlee@gmail.com','7c4a8d09ca3762af61e59520943dc26494f8941b','Woodlands','98765432','user',0,'basic',0.00,NULL,NULL,NULL,NULL),(5,'john','pon@pon.com','7c4a8d09ca3762af61e59520943dc26494f8941b','123 John Street','12345678','user',0,'basic',0.00,NULL,NULL,NULL,NULL),(7,'Matthew','mat@mat.com','7c4a8d09ca3762af61e59520943dc26494f8941b','Kingsley Avenue 10','92199312','user',0,'basic',0.00,NULL,NULL,NULL,NULL),(8,'Ken','ken@ken.com','7c4a8d09ca3762af61e59520943dc26494f8941b','jurong avenue 1','82313731','user',0,'basic',0.00,NULL,NULL,NULL,NULL);
 /*!40000 ALTER TABLE `users` ENABLE KEYS */;
 UNLOCK TABLES;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;

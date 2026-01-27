@@ -1,20 +1,88 @@
 <%- include('partials/header', { user, pageTitle: 'Payment Success', currentPage: 'cart' }) %>
-<div class="text-center py-5">
-  <div style="display:inline-flex; align-items:center; justify-content:center; width:84px; height:84px; border-radius:24px; background:#e9f3ef; margin:0 auto 10px;">
-    <svg viewBox="0 0 24 24" style="width:42px; height:42px; stroke:#1f6c92; fill:none; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round;">
-      <path d="M5 12l4 4 10-10"></path>
-    </svg>
+<section class="payment-success">
+  <div class="success-card">
+    <div class="success-header">
+      <div class="success-icon" aria-hidden="true">
+        <svg viewBox="0 0 48 48" role="img" aria-label="">
+          <defs>
+            <linearGradient id="succGrad" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stop-color="#0b3b5c"/>
+              <stop offset="100%" stop-color="#1f6c92"/>
+            </linearGradient>
+          </defs>
+          <circle cx="24" cy="24" r="20" fill="none" stroke="url(#succGrad)" stroke-width="2.5"/>
+          <path d="M16 25l6 6 12-14" fill="none" stroke="url(#succGrad)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle cx="38" cy="14" r="3" fill="#e07a5f"/>
+        </svg>
+      </div>
+      <div class="success-copy">
+        <span class="success-tag">Payment confirmed</span>
+        <h2>Your payment was successful</h2>
+        <p class="text-muted">Thank you! Your order has been placed and a receipt is ready.</p>
+      </div>
+    </div>
+
+    <div class="success-details">
+      <div class="detail-row">
+        <span class="detail-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M5 7h14l-1.2 10H6.2L5 7z"></path><path d="M9 7a3 3 0 1 1 6 0"></path><path d="M8 21h8"></path></svg>
+        </span>
+        <div>
+          <div class="detail-title">Order queued</div>
+          <div class="detail-sub">We’re preparing your items for dispatch.</div>
+        </div>
+      </div>
+      <div class="detail-row">
+        <span class="detail-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M4 6h11v12H4z"></path><path d="M15 8h3l2 3v7h-5"></path><circle cx="7" cy="18" r="1.6"></circle><circle cx="17" cy="18" r="1.6"></circle></svg>
+        </span>
+        <div>
+          <div class="detail-title">Delivery on the way</div>
+          <div class="detail-sub">Track updates in your Orders page.</div>
+        </div>
+      </div>
+      <div class="detail-row">
+        <span class="detail-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M7 3h10v18l-5-3-5 3V3z"></path><path d="M9 8h6"></path><path d="M9 12h6"></path></svg>
+        </span>
+        <div>
+          <div class="detail-title">Invoice ready</div>
+          <div class="detail-sub">Download or print your receipt anytime.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="success-actions">
+      <a href="/orders" class="btn btn-primary">
+        <span class="btn-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M7 3h10v18l-5-3-5 3V3z"></path><path d="M9 8h6"></path><path d="M9 12h6"></path></svg>
+        </span>
+        View Orders
+      </a>
+      <% if (typeof lastOrderId !== 'undefined' && lastOrderId) { %>
+        <a href="#" onclick="openInvoiceAndPrint('<%= lastOrderId %>')" class="btn btn-secondary">
+          <span class="btn-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path d="M7 7V3h10v4"></path><path d="M6 10h12v7H6z"></path><path d="M8 14h8"></path><path d="M8 18h8"></path></svg>
+          </span>
+          Print Invoice
+        </a>
+      <% } else { %>
+        <a id="printInvoiceBtn" href="#" onclick="openInvoiceAndPrint(window.__latestOrderId)" class="btn btn-secondary" style="display:none;">
+          <span class="btn-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path d="M7 7V3h10v4"></path><path d="M6 10h12v7H6z"></path><path d="M8 14h8"></path><path d="M8 18h8"></path></svg>
+          </span>
+          Print Invoice
+        </a>
+      <% } %>
+      <a href="/shopping" class="btn btn-outline">
+        <span class="btn-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M6 7h12l-1 10H7L6 7z"></path><path d="M9 7a3 3 0 1 1 6 0"></path><path d="M8 21h8"></path></svg>
+        </span>
+        Continue Shopping
+      </a>
+    </div>
   </div>
-  <h2 class="mt-3">Your Payment was Successful</h2>
-  <p class="text-muted mb-4">Thank you! Your order has been placed.</p>
-  <a href="/orders" class="btn btn-primary"><span class="btn-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 3h10v18l-5-3-5 3V3z"></path><path d="M9 8h6"></path><path d="M9 12h6"></path></svg></span>View Orders</a>
-  <% if (typeof lastOrderId !== 'undefined' && lastOrderId) { %>
-    <a href="#" onclick="openInvoiceAndPrint('<%= lastOrderId %>')" class="btn btn-secondary ms-2"><span class="btn-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 7V3h10v4"></path><path d="M6 10h12v7H6z"></path><path d="M8 14h8"></path><path d="M8 18h8"></path></svg></span>Print Invoice</a>
-  <% } else { %>
-    <a id="printInvoiceBtn" href="#" onclick="openInvoiceAndPrint(window.__latestOrderId)" class="btn btn-secondary ms-2" style="display:none;"><span class="btn-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 7V3h10v4"></path><path d="M6 10h12v7H6z"></path><path d="M8 14h8"></path><path d="M8 18h8"></path></svg></span>Print Invoice</a>
-  <% } %>
-  <a href="/shopping" class="btn btn-outline ms-2"><span class="btn-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6 7h12l-1 10H7L6 7z"></path><path d="M9 7a3 3 0 1 1 6 0"></path><path d="M8 21h8"></path></svg></span>Continue Shopping</a>
-</div>
+</section>
 <% if (!(typeof lastOrderId !== 'undefined' && lastOrderId)) { %>
 <script>
 // Attempt to fetch latest order and enable Print Invoice button
