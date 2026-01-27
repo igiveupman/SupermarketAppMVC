@@ -54,6 +54,7 @@
                 <th>Uses</th>
                 <th>Expires</th>
                 <th>Status</th>
+                <th>Action</th>
               </tr>
             </thead>
             <tbody>
@@ -72,6 +73,14 @@
                     <% } else { %>
                       <span class="badge bg-success">Active</span>
                     <% } %>
+                  </td>
+                  <td>
+                    <% const hasRedemptions = Number(v.redeemed_count || 0) > 0; %>
+                    <form action="/admin/vouchers/<%= v.id %>/delete" method="post" onsubmit="return confirm('Remove this voucher?');">
+                      <button class="btn btn-outline btn-sm" type="submit" <%= hasRedemptions ? 'disabled' : '' %>>
+                        <%= hasRedemptions ? 'Redeemed' : 'Remove' %>
+                      </button>
+                    </form>
                   </td>
                 </tr>
               <% }) %>

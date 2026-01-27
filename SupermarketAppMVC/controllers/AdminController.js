@@ -217,6 +217,35 @@ module.exports = {
     }
   },
 
+  async deleteVoucher(req, res) {
+    const admin = req.session.user;
+    if (!admin || admin.role !== 'admin') {
+      req.flash('error', 'Unauthorized');
+      return res.redirect('/');
+    }
+    const voucherId = parseInt(req.params.id, 10);
+    if (!voucherId) {
+      req.flash('error', 'Invalid voucher id.');
+      return res.redirect('/admin/vouchers');
+    }
+    const vouchers = require('../services/vouchers');
+    try {
+      const result = await vouchers.deleteVoucher(voucherId);
+      if (result && result.blocked) {
+        req.flash('error', 'Cannot remove voucher that has redemptions.');
+      } else if (result && result.affectedRows) {
+        req.flash('success', `Voucher #${voucherId} removed.`);
+      } else {
+        req.flash('error', 'Voucher not found or already removed.');
+      }
+      return res.redirect('/admin/vouchers');
+    } catch (err) {
+      console.error('Failed to delete voucher:', err);
+      req.flash('error', 'Failed to remove voucher.');
+      return res.redirect('/admin/vouchers');
+    }
+  },
+
   async undoLastCheckout(req, res) {
     const fs = require('fs');
     const path = require('path');

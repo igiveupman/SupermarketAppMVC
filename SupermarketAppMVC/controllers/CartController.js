@@ -322,10 +322,21 @@ module.exports = {
           return { productId: i.productId, quantity: i.quantity, price };
         });
         // Recompute totals at checkout time (authoritative).
-        const voucher = req.session.checkout_voucher || await vouchers.resolveAppliedVoucher(req);
+        const candidateVoucher = req.session.checkout_voucher || req.session.applied_voucher || null;
+        let voucher = null;
+        if (candidateVoucher && candidateVoucher.code) {
+          voucher = await vouchers.findValidVoucherByCode(candidateVoucher.code, req.session.user.id);
+        } else {
+          voucher = await vouchers.resolveAppliedVoucher(req);
+        }
         const pricing = computeCartPricing(cartForPricing, req.session.user, voucher);
-        if (pricing.voucherRejected) {
+        if (!voucher || pricing.voucherRejected) {
+          voucher = null;
           req.session.applied_voucher = null;
+          req.session.checkout_voucher = null;
+        } else {
+          req.session.applied_voucher = snapshotVoucher(voucher);
+          req.session.checkout_voucher = snapshotVoucher(voucher);
         }
         const nameMap = new Map(cart.map(i => [i.productId, i.productName]));
         const orderItems = pricing.items.map((i) => ({
@@ -361,8 +372,8 @@ module.exports = {
             console.log('Order stored id', data.orderId);
       // Store last order id for invoice link on success page
       req.session.lastOrderId = data.orderId;
-            if (data.orderId && req.session.applied_voucher) {
-              vouchers.redeemVoucher(req.session.applied_voucher.id, req.session.user.id, data.orderId)
+            if (data.orderId && voucher) {
+              vouchers.redeemVoucher(voucher.id, req.session.user.id, data.orderId)
                 .catch((e) => console.error('Failed to redeem voucher:', e));
             }
           }

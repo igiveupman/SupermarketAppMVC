@@ -14,6 +14,15 @@ function query(sql, params) {
   });
 }
 
+function execute(sql, params) {
+  return new Promise((resolve, reject) => {
+    db.query(sql, params || [], (err, result) => {
+      if (err) return reject(err);
+      resolve(result || {});
+    });
+  });
+}
+
 function generateCode(prefix) {
   const raw = crypto.randomBytes(3).toString('hex').toUpperCase();
   const safePrefix = prefix ? String(prefix).toUpperCase() : 'VCH';
@@ -46,6 +55,17 @@ async function listVouchers(limit) {
     LIMIT ?
   `;
   return query(sql, [max]);
+}
+
+async function deleteVoucher(voucherId) {
+  const id = Number(voucherId);
+  if (!Number.isFinite(id) || id <= 0) return { affectedRows: 0 };
+  const used = await query('SELECT COUNT(*) AS total FROM voucher_redemptions WHERE voucher_id = ?', [id]);
+  const usedCount = used && used[0] ? Number(used[0].total) : 0;
+  if (usedCount > 0) {
+    return { affectedRows: 0, blocked: true };
+  }
+  return execute('DELETE FROM vouchers WHERE id = ?', [id]);
 }
 
 async function listAvailableForUser(userId) {
@@ -117,8 +137,30 @@ async function getActiveUserVoucher(userId) {
   return rows[0] || null;
 }
 
+async function hasPremiumVoucherThisMonth(userId) {
+  if (!userId) return false;
+  const now = new Date();
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  const nextMonthStart = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+  const sql = `
+    SELECT id
+    FROM vouchers
+    WHERE user_id = ?
+      AND code LIKE 'PREM-%'
+      AND created_at >= ?
+      AND created_at < ?
+    LIMIT 1
+  `;
+  const rows = await query(sql, [userId, monthStart, nextMonthStart]);
+  return rows.length > 0;
+}
+
 async function ensurePremiumMonthlyVoucher(user) {
   if (!user || getTier(user) !== 'premium') return null;
+  const alreadyIssued = await hasPremiumVoucherThisMonth(user.id);
+  if (alreadyIssued) {
+    return getActiveUserVoucher(user.id);
+  }
   const existing = await getActiveUserVoucher(user.id);
   if (existing) return existing;
   const expiresAt = new Date(Date.now() + PREMIUM_VOUCHER_DAYS * 24 * 60 * 60 * 1000);
@@ -162,5 +204,6 @@ module.exports = {
   findValidVoucherByCode,
   redeemVoucher,
   ensurePremiumMonthlyVoucher,
-  resolveAppliedVoucher
+  resolveAppliedVoucher,
+  deleteVoucher
 };

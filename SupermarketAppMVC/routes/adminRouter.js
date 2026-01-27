@@ -59,6 +59,7 @@ router.get('/refund-requests', AdminController.refundRequests);
 // Voucher management (admin)
 router.get('/vouchers', AdminController.vouchersPage);
 router.post('/vouchers', AdminController.createVoucher);
+router.post('/vouchers/:id/delete', AdminController.deleteVoucher);
 // Refund an order (admin)
 router.post('/orders/:id/refund', AdminController.refundOrder);
 // Approve/deny customer refund requests (admin)
