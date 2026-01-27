@@ -18,7 +18,7 @@
       <div class="price-tag">$<%= p.price.toFixed(2) %></div>
       <div class="stock">Stock: <%= p.quantity %></div>
       <form action="/add-to-cart/<%= p.id %>" method="POST" class="mt-auto">
-        <input type="hidden" name="returnTo" value="/shopping">
+        <input type="hidden" name="returnTo" value="/favorites">
         <div class="input-group mb-2">
           <input type="number" name="quantity" class="form-control qty-input" min="1" max="<%= p.quantity %>" value="1" required>
         </div>
@@ -28,9 +28,21 @@
   <% }) %>
 </div>
 <%- include('partials/footer') %>
+<% if (messages && messages.length) { %>
+  <div class="toast-bottom" id="favToast"><span><%= messages.join(', ') %></span></div>
+<% } %>
 <style>
 .favorite-toggle { text-decoration:none; }
 .heart { font-size:1.2rem; color:#cbd5e1; transition:.2s; }
 .heart.favorited { color:#e11d48; }
 .heart:hover { transform:scale(1.15); color:#e11d48; }
+.toast-bottom { position:fixed; left:50%; bottom:24px; transform:translateX(-50%); background:#0f172a; color:#fff; padding:10px 16px; border-radius:999px; box-shadow:0 12px 30px -12px rgba(15,23,42,.45); z-index:999; font-size:.9rem; }
 </style>
+<% if (messages && messages.length) { %>
+<script>
+  setTimeout(() => {
+    const t = document.getElementById('favToast');
+    if (t) t.style.display = 'none';
+  }, 2500);
+</script>
+<% } %>

@@ -15,11 +15,14 @@
   <% } else { %>
     <div class="voucher-grid">
       <% available.forEach(v => { %>
-        <% const tooLarge = Number(v.amount) > Number(cartSubtotal || 0); %>
+        <% const isPercent = String(v.discount_type || 'fixed').toLowerCase() === 'percent'; %>
+        <% const subtotal = Number(cartSubtotal || 0); %>
+        <% const discountAmount = isPercent ? (subtotal * (Number(v.amount || 0) / 100)) : Number(v.amount || 0); %>
+        <% const tooLarge = subtotal <= 0 || discountAmount > subtotal; %>
         <% const isApplied = applied && applied.code === v.code; %>
         <div class="voucher-card">
           <div class="voucher-code"><%= v.code %></div>
-          <div class="voucher-amount">-$<%= Number(v.amount).toFixed(2) %></div>
+          <div class="voucher-amount"><%= isPercent ? ('-' + Number(v.amount).toFixed(0) + '%') : ('-$' + Number(v.amount).toFixed(2)) %></div>
           <div class="voucher-meta">
             <span>Expires: <%= new Date(v.expires_at).toLocaleDateString() %></span>
             <span><%= v.user_id ? 'Personal' : 'Global' %></span>
@@ -51,9 +54,10 @@
   <% } else { %>
     <div class="voucher-grid">
       <% redeemed.forEach(r => { %>
+        <% const isPercent = String(r.discount_type || 'fixed').toLowerCase() === 'percent'; %>
         <div class="voucher-card disabled">
           <div class="voucher-code"><%= r.code %></div>
-          <div class="voucher-amount">-$<%= Number(r.amount).toFixed(2) %></div>
+          <div class="voucher-amount"><%= isPercent ? ('-' + Number(r.amount).toFixed(0) + '%') : ('-$' + Number(r.amount).toFixed(2)) %></div>
           <div class="voucher-meta">
             <span>Used on: <%= new Date(r.redeemed_at).toLocaleDateString() %></span>
             <span>Order #<%= r.order_id %></span>

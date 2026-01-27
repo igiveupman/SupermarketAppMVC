@@ -87,9 +87,12 @@
   </div>
 
   <section class="totals-box">
-    <div class="row-line"><span>Subtotal</span><span>$<%= subtotal.toFixed(2) %></span></div>
-    <div class="row-line"><span>GST (8%)</span><span>$<%= tax.toFixed(2) %></span></div>
-    <div class="row-line total"><span>Total</span><span>$<%= total.toFixed(2) %></span></div>
+    <div class="row-line"><span class="summary-label subtotal">Subtotal</span><span>$<%= subtotal.toFixed(2) %></span></div>
+    <div class="row-line"><span class="summary-label delivery">Delivery fee</span><span>$<%= Number(deliveryFee || 0).toFixed(2) %></span></div>
+    <% if (Number(voucherAmount || 0) > 0) { %>
+      <div class="row-line"><span class="text-success">Voucher</span><span>-$<%= Number(voucherAmount || 0).toFixed(2) %></span></div>
+    <% } %>
+    <div class="row-line total"><span>Total</span><span>$<%= Number(total || 0).toFixed(2) %></span></div>
   </section>
 
   <footer class="invoice-footer">

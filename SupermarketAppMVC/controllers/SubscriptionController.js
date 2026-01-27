@@ -11,6 +11,7 @@ const TIERS = [
     id: 'basic',
     name: 'Basic',
     price: 0,
+    savings: 'Monthly savings: $0 (pay-as-you-go rates)',
     benefits: [
       'Standard member pricing',
       'Order tracking and receipts',
@@ -21,6 +22,7 @@ const TIERS = [
     id: 'essential',
     name: 'Essential',
     price: 5.9,
+    savings: 'Monthly savings: free delivery on $40+ orders',
     benefits: [
       'Everything in Basic',
       'Free delivery over $40'
@@ -30,6 +32,7 @@ const TIERS = [
     id: 'premium',
     name: 'Premium',
     price: 12.9,
+    savings: 'Monthly savings: free delivery + monthly voucher',
     benefits: [
       'Everything in Essential',
       'Free delivery on all orders',
@@ -244,25 +247,30 @@ module.exports = {
       return res.redirect('/subscription');
     }
     const reason = (req.body.reason || '').trim();
-    if (!reason || reason.length < 10) {
-      req.flash('error', 'Please provide a brief cancellation reason (min 10 characters).');
+    if (reason && reason.length < 10) {
+      req.flash('error', 'Cancellation reason must be at least 10 characters if provided.');
       return res.redirect('/subscription/cancel');
     }
     const cancelledAt = new Date();
-    const effectiveAt = user.subscription_started_at ? new Date(user.subscription_started_at) : null;
-    if (effectiveAt && !Number.isNaN(effectiveAt.getTime())) {
-      effectiveAt.setMonth(effectiveAt.getMonth() + 1);
-    }
-    User.cancelSubscription(user.id, reason, cancelledAt, effectiveAt || null, (err) => {
+    User.cancelSubscription(user.id, reason, cancelledAt, cancelledAt, (err) => {
       if (err) {
         req.flash('error', 'Failed to cancel subscription.');
         return res.redirect('/subscription');
       }
-      req.session.user.subscription_cancel_reason = reason;
-      req.session.user.subscription_cancelled_at = cancelledAt;
-      req.session.user.subscription_cancel_effective_at = effectiveAt || null;
-      req.flash('success', 'Subscription canceled. Your benefits remain until the end of the current billing month.');
-      return res.redirect('/subscription');
+      User.updateSubscription(user.id, 'basic', 0, null, (uErr) => {
+        if (uErr) {
+          req.flash('error', 'Subscription canceled but failed to reset tier.');
+          return res.redirect('/subscription');
+        }
+        req.session.user.subscription_tier = 'basic';
+        req.session.user.subscription_price = 0;
+        req.session.user.subscription_started_at = null;
+        req.session.user.subscription_cancel_reason = reason || null;
+        req.session.user.subscription_cancelled_at = cancelledAt;
+        req.session.user.subscription_cancel_effective_at = cancelledAt;
+        req.flash('success', 'Subscription canceled. You are now on the Basic tier.');
+        return res.redirect('/subscription');
+      });
     });
   }
 };

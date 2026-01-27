@@ -4,7 +4,7 @@ const Product = require('../models/Product');
 const Order = require('../models/Order');
 const db = require('../db');
 const netsQr = require('../services/nets');
-const { computeCartPricing } = require('../services/subscriptionPricing');
+const { computeCartPricing, roundMoney } = require('../services/subscriptionPricing');
 const vouchers = require('../services/vouchers');
 
 // Helper: adjust product quantity in DB by delta (can be positive to restock or negative to reserve)
@@ -51,7 +51,8 @@ function snapshotVoucher(voucher) {
   return {
     id: voucher.id,
     code: voucher.code,
-    amount: Number(voucher.amount)
+    amount: Number(voucher.amount),
+    discount_type: voucher.discount_type || 'fixed'
   };
 }
 
@@ -522,13 +523,27 @@ module.exports.applyVoucher = async function(req, res) {
     }
     const cart = req.session.cart || [];
     const basePricing = computeCartPricing(cart, req.session.user, null);
-    if (Number(voucher.amount) > Number(basePricing.discountedSubtotal || 0)) {
+    const discountedSubtotal = Number(basePricing.discountedSubtotal || 0);
+    const voucherValue = Number(voucher.amount || 0);
+    const voucherType = (voucher.discount_type || 'fixed').toLowerCase();
+    let discountAmount = 0;
+    if (voucherType === 'percent') {
+      if (voucherValue <= 0 || voucherValue > 100) {
+        req.flash('error', 'Voucher percentage is invalid.');
+        return res.redirect(returnTo);
+      }
+      discountAmount = roundMoney(discountedSubtotal * (voucherValue / 100));
+    } else {
+      discountAmount = voucherValue;
+    }
+    if (discountAmount <= 0 || discountAmount > discountedSubtotal) {
       req.flash('error', 'Voucher amount exceeds the cost of products in your cart.');
       return res.redirect(returnTo);
     }
-    req.session.applied_voucher = { id: voucher.id, code: voucher.code, amount: Number(voucher.amount) };
+    req.session.applied_voucher = { id: voucher.id, code: voucher.code, amount: Number(voucher.amount), discount_type: voucherType };
     req.session.voucher_opt_out = false;
-    req.flash('success', `Voucher applied: ${voucher.code} (-$${Number(voucher.amount).toFixed(2)})`);
+    const label = voucherType === 'percent' ? `${voucherValue}%` : `$${Number(voucher.amount).toFixed(2)}`;
+    req.flash('success', `Voucher applied: ${voucher.code} (${label}) -$${discountAmount.toFixed(2)}`);
     return res.redirect(returnTo);
   } catch (err) {
     req.flash('error', 'Failed to apply voucher.');

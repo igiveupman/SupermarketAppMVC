@@ -5,6 +5,7 @@ CREATE TABLE `vouchers` (
   `id` int NOT NULL AUTO_INCREMENT,
   `code` varchar(40) NOT NULL UNIQUE,
   `amount` decimal(10,2) NOT NULL,
+  `discount_type` varchar(10) NOT NULL DEFAULT 'fixed',
   `user_id` int DEFAULT NULL,
   `max_uses` int NOT NULL DEFAULT '1',
   `active` tinyint(1) NOT NULL DEFAULT '1',

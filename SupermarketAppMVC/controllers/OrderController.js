@@ -5,6 +5,7 @@
  */
 const Order = require('../models/Order');
 const db = require('../db');
+const { BASE_DELIVERY_FEE } = require('../services/subscriptionPricing');
 
 function safeParseSnapshot(raw) {
   if (!raw) return null;
@@ -43,6 +44,10 @@ module.exports = {
         orders.forEach((o, idx) => {
           o.displayNumber = totalCount - (safeOffset + idx);
           o.snapshotItems = safeParseSnapshot(o.items_snapshot);
+          const deliveryFee = Number(o.delivery_fee || 0);
+          const voucherAmt = Number(o.voucher_amount || 0);
+          const deliverySavings = Math.max(0, Number(BASE_DELIVERY_FEE) - deliveryFee);
+          o.savings_amount = deliverySavings + voucherAmt;
         });
         // Fetch items for these orders (join with products to get names)
         const ids = orders.map(o => o.id);
@@ -104,13 +109,16 @@ module.exports = {
             product_id: it.productId,
             quantity: it.quantity,
             total_price: Number(it.lineTotal || (Number(it.unitPrice || 0) * Number(it.quantity || 0))) || 0,
+            price: Number(it.unitPrice || (Number(it.quantity || 0) ? (Number(it.lineTotal || 0) / Number(it.quantity || 1)) : 0)) || 0,
             productName: it.productName
           }));
           const subtotal = items.reduce((s, it) => s + (Number(it.total_price) || 0), 0);
-          const taxRate = 0.08; // 8% sample GST
-          const tax = +(subtotal * taxRate).toFixed(2);
-          const total = +(subtotal + tax).toFixed(2);
-          return res.render('invoice', { user, order, items, subtotal: +subtotal.toFixed(2), tax, total, displayOrderNumber });
+          const deliveryFee = Number(order.delivery_fee || 0);
+          const voucherAmount = Number(order.voucher_amount || 0);
+          const savingsAmount = Math.max(0, Number(BASE_DELIVERY_FEE) - deliveryFee) + voucherAmount;
+          const computedTotal = +(subtotal + deliveryFee - voucherAmount).toFixed(2);
+          const total = Number(order.total || 0) || computedTotal;
+          return res.render('invoice', { user, order, items, subtotal: +subtotal.toFixed(2), deliveryFee, voucherAmount, total, savingsAmount, displayOrderNumber });
         });
         return;
       }
@@ -126,16 +134,22 @@ module.exports = {
       `;
       db.query(sql, [orderId], (iErr, items) => {
         if (iErr) return res.status(500).send('Server error');
+        const normalizedItems = (items || []).map((it) => ({
+          ...it,
+          price: Number(it.quantity || 0) ? Number(it.total_price || 0) / Number(it.quantity || 1) : 0
+        }));
         Order.listByUser(user.id, (lErr, orders) => {
           if (lErr) return res.status(500).send('Server error');
           const index = orders.findIndex(o => o.id === order.id);
           const displayOrderNumber = index >= 0 ? (orders.length - index) : order.id;
           // Calculate totals (subtotal + 8% GST)
-          const subtotal = items.reduce((s, it) => s + (Number(it.total_price) || 0), 0);
-          const taxRate = 0.08; // 8% sample GST
-          const tax = +(subtotal * taxRate).toFixed(2);
-          const total = +(subtotal + tax).toFixed(2);
-          res.render('invoice', { user, order, items, subtotal: +subtotal.toFixed(2), tax, total, displayOrderNumber });
+          const subtotal = normalizedItems.reduce((s, it) => s + (Number(it.total_price) || 0), 0);
+          const deliveryFee = Number(order.delivery_fee || 0);
+          const voucherAmount = Number(order.voucher_amount || 0);
+          const savingsAmount = Math.max(0, Number(BASE_DELIVERY_FEE) - deliveryFee) + voucherAmount;
+          const computedTotal = +(subtotal + deliveryFee - voucherAmount).toFixed(2);
+          const total = Number(order.total || 0) || computedTotal;
+          res.render('invoice', { user, order, items: normalizedItems, subtotal: +subtotal.toFixed(2), deliveryFee, voucherAmount, total, savingsAmount, displayOrderNumber });
         });
       });
     });

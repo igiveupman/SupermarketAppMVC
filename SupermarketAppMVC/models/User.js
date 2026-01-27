@@ -83,6 +83,7 @@ const User = {
     });
   },
 
+
   // Delete user by id (admin only)
   delete(id, callback) {
     db.query('DELETE FROM users WHERE id = ?', [id], (err, result) => {

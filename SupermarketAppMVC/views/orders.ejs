@@ -13,6 +13,7 @@
     <% const itemSubtotal = (itemsByOrder[o.id] || []).reduce((s,it)=> s + Number(it.total_price || 0), 0); %>
     <% const voucherAmt = Number(o.voucher_amount || 0); %>
     <% const deliveryFee = Number(o.delivery_fee || 0); %>
+    <% const savingsAmount = Number(o.savings_amount || 0); %>
     <% const derivedTotal = (itemSubtotal + deliveryFee - voucherAmt); %>
     <% const recordedTotal = Number(o.total || 0); %>
     <div class="list-group-item mb-3 shadow-sm rounded-md order-card" id="order-<%= o.id %>">
@@ -27,6 +28,9 @@
             <div class="small text-success">Voucher (<%= o.voucher_code || 'Applied' %>): -$<%= voucherAmt.toFixed(2) %></div>
           <% } %>
           <div class="fw-semibold">Total: $<%= derivedTotal.toFixed(2) %></div>
+          <% if (savingsAmount > 0) { %>
+            <div class="small text-success">Savings this order: $<%= savingsAmount.toFixed(2) %></div>
+          <% } %>
           <% if (Math.abs(derivedTotal - recordedTotal) > 0.01) { %>
             <div class="small text-warning">Recorded total differs: $<%= recordedTotal.toFixed(2) %></div>
           <% } %>

@@ -190,10 +190,16 @@ module.exports = {
     const vouchers = require('../services/vouchers');
     const code = (req.body.code || '').trim().toUpperCase();
     const amount = Number(req.body.amount);
+    const discountType = (req.body.discount_type || 'fixed').toLowerCase();
     const expiresIn = Number(req.body.expires_in_days || 30);
     const userId = req.body.user_id ? parseInt(req.body.user_id, 10) : null;
     const maxUses = req.body.max_uses ? parseInt(req.body.max_uses, 10) : 1;
-    if (!Number.isFinite(amount) || amount <= 0) {
+    if (discountType === 'percent') {
+      if (!Number.isFinite(amount) || amount <= 0 || amount > 100) {
+        req.flash('error', 'Percentage vouchers must be between 1 and 100.');
+        return res.redirect('/admin/vouchers');
+      }
+    } else if (!Number.isFinite(amount) || amount <= 0) {
       req.flash('error', 'Voucher amount must be greater than 0.');
       return res.redirect('/admin/vouchers');
     }
@@ -203,12 +209,16 @@ module.exports = {
       const voucher = await vouchers.createVoucher({
         code: code || undefined,
         amount,
+        discountType,
         expiresAt,
         userId: Number.isFinite(userId) && userId > 0 ? userId : null,
         maxUses: Number.isFinite(maxUses) && maxUses > 0 ? maxUses : 1,
         createdByAdminId: admin.id
       });
-      req.flash('success', `Voucher created: ${voucher.code} (-$${Number(voucher.amount).toFixed(2)})`);
+      const label = String(voucher.discount_type || 'fixed').toLowerCase() === 'percent'
+        ? `${Number(voucher.amount).toFixed(0)}%`
+        : `$${Number(voucher.amount).toFixed(2)}`;
+      req.flash('success', `Voucher created: ${voucher.code} (${label})`);
       return res.redirect('/admin/vouchers');
     } catch (err) {
       console.error('Failed to create voucher:', err);

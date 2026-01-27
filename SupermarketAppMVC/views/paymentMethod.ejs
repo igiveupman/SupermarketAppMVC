@@ -8,8 +8,8 @@
     <% cart.forEach(i => { %>
       <li class="list-group-item d-flex justify-content-between"><span><%= i.productName %> x <%= i.quantity %></span><span>$<%= Number(i.lineTotal).toFixed(2) %></span></li>
     <% }) %>
-    <li class="list-group-item d-flex justify-content-between"><span>Subtotal</span><span>$<%= pricing.subtotal.toFixed(2) %></span></li>
-    <li class="list-group-item d-flex justify-content-between"><span>Delivery fee</span><span>$<%= pricing.deliveryFee.toFixed(2) %></span></li>
+    <li class="list-group-item d-flex justify-content-between"><span class="summary-label subtotal">Subtotal</span><span>$<%= pricing.subtotal.toFixed(2) %></span></li>
+    <li class="list-group-item d-flex justify-content-between"><span class="summary-label delivery">Delivery fee</span><span>$<%= pricing.deliveryFee.toFixed(2) %></span></li>
     <% if (pricing.voucherAmount > 0) { %>
       <li class="list-group-item d-flex justify-content-between text-success"><span>Voucher (<%= pricing.voucherCode %>)</span><span>-$<%= Number(pricing.voucherAmount).toFixed(2) %></span></li>
     <% } %>

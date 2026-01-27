@@ -58,16 +58,28 @@ function computeCartPricing(cart, user, voucher) {
   if (tier === 'premium') {
     deliveryFee = 0;
     freeDeliveryApplied = true;
-  } else if (tier === 'essential' && discountedSubtotal >= ESSENTIAL_FREE_THRESHOLD) {
+  } else if (tier === 'essential' && subtotal >= ESSENTIAL_FREE_THRESHOLD) {
     deliveryFee = 0;
     freeDeliveryApplied = true;
   }
 
   const totalBeforeVoucher = roundMoney(discountedSubtotal + deliveryFee);
   const voucherValue = voucher && Number(voucher.amount) > 0 ? Number(voucher.amount) : 0;
-  const voucherEligible = voucherValue > 0 && voucherValue <= discountedSubtotal;
-  const voucherAmount = voucherEligible ? voucherValue : 0;
-  const total = roundMoney(totalBeforeVoucher - voucherAmount);
+  const voucherType = voucher && voucher.discount_type ? String(voucher.discount_type).toLowerCase() : 'fixed';
+  let voucherAmount = 0;
+  let voucherEligible = false;
+  if (voucherValue > 0) {
+    if (voucherType === 'percent') {
+      if (voucherValue <= 100) {
+        voucherAmount = roundMoney(discountedSubtotal * (voucherValue / 100));
+        voucherEligible = voucherAmount > 0 && voucherAmount <= discountedSubtotal;
+      }
+    } else {
+      voucherAmount = voucherValue;
+      voucherEligible = voucherAmount <= discountedSubtotal;
+    }
+  }
+  const total = roundMoney(totalBeforeVoucher - (voucherEligible ? voucherAmount : 0));
 
   return {
     tier,
@@ -78,8 +90,10 @@ function computeCartPricing(cart, user, voucher) {
     deliveryFee,
     total,
     totalBeforeVoucher,
-    voucherAmount,
+    voucherAmount: voucherEligible ? voucherAmount : 0,
     voucherCode: voucherEligible && voucher && voucher.code ? String(voucher.code) : null,
+    voucherType: voucher ? voucherType : null,
+    voucherValue: voucher ? voucherValue : 0,
     voucherRejected: !!(voucherValue > 0 && !voucherEligible),
     freeDeliveryApplied,
     freeDeliveryThreshold: ESSENTIAL_FREE_THRESHOLD,
@@ -89,6 +103,7 @@ function computeCartPricing(cart, user, voucher) {
 }
 
 module.exports = {
+  BASE_DELIVERY_FEE,
   computeCartPricing,
   roundMoney,
   getTier,

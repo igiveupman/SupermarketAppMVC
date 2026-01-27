@@ -5,7 +5,7 @@
       <div>
         <div class="cancel-eyebrow">Subscription</div>
         <h2>Cancel <%= currentTier.name %> plan</h2>
-        <p class="text-muted">Tell us why you’re cancelling. You won’t be billed again unless another month has started.</p>
+        <p class="text-muted">Tell us why you're cancelling. Your plan will be downgraded to Basic immediately.</p>
       </div>
     </div>
     <div class="cancel-meta">
@@ -20,7 +20,7 @@
     </div>
     <form action="/subscription/cancel" method="POST">
       <label class="form-label fw-semibold">Cancellation reason</label>
-      <textarea name="reason" class="form-control" rows="4" placeholder="Share what didn’t work for you (min 10 characters)" required minlength="10"></textarea>
+      <textarea name="reason" class="form-control" rows="4" placeholder="Share what didn't work for you (optional, min 10 characters if provided)" ></textarea>
       <div class="d-flex gap-2 mt-3 flex-wrap">
         <button type="submit" class="btn btn-outline-danger">Confirm Cancellation</button>
         <a href="/subscription" class="btn btn-outline">Back to Subscriptions</a>
@@ -29,3 +29,5 @@
   </div>
 </section>
 <%- include('partials/footer') %>
+
+

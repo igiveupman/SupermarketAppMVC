@@ -83,6 +83,7 @@ connection.query(
     'id INT AUTO_INCREMENT PRIMARY KEY,' +
     'code VARCHAR(40) NOT NULL UNIQUE,' +
     'amount DECIMAL(10,2) NOT NULL,' +
+    "discount_type VARCHAR(10) NOT NULL DEFAULT 'fixed'," +
     'user_id INT NULL,' +
     'max_uses INT NOT NULL DEFAULT 1,' +
     'active TINYINT(1) NOT NULL DEFAULT 1,' +
@@ -98,6 +99,12 @@ connection.query(
         }
     }
 );
+// Ensure discount_type column exists on vouchers
+connection.query("ALTER TABLE vouchers ADD COLUMN discount_type VARCHAR(10) NOT NULL DEFAULT 'fixed'", (vErr) => {
+    if (vErr && vErr.code !== 'ER_DUP_FIELDNAME') {
+        console.error('Failed to ensure discount_type column:', vErr.code || vErr);
+    }
+});
 // Ensure voucher_redemptions table exists
 connection.query(
     'CREATE TABLE IF NOT EXISTS voucher_redemptions (' +

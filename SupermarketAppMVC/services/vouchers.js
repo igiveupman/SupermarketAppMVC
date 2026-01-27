@@ -29,12 +29,14 @@ function generateCode(prefix) {
   return `${safePrefix}-${raw}`;
 }
 
-async function createVoucher({ code, amount, expiresAt, userId, maxUses, createdByAdminId }) {
+async function createVoucher({ code, amount, discountType, expiresAt, userId, maxUses, createdByAdminId }) {
   const voucherCode = (code || generateCode('VCH')).toUpperCase();
-  const sql = 'INSERT INTO vouchers (code, amount, user_id, max_uses, active, expires_at, created_by_admin_id) VALUES (?, ?, ?, ?, 1, ?, ?)';
+  const safeType = discountType === 'percent' ? 'percent' : 'fixed';
+  const sql = 'INSERT INTO vouchers (code, amount, discount_type, user_id, max_uses, active, expires_at, created_by_admin_id) VALUES (?, ?, ?, ?, ?, 1, ?, ?)';
   const params = [
     voucherCode,
     Number(amount || 0).toFixed(2),
+    safeType,
     userId || null,
     Number.isFinite(maxUses) ? maxUses : 1,
     expiresAt,
@@ -85,7 +87,7 @@ async function listAvailableForUser(userId) {
 async function listRedeemedForUser(userId, limit) {
   const max = Number.isFinite(limit) ? limit : 50;
   const sql = `
-    SELECT v.code, v.amount, r.redeemed_at, r.order_id
+    SELECT v.code, v.amount, v.discount_type, r.redeemed_at, r.order_id
     FROM voucher_redemptions r
     JOIN vouchers v ON v.id = r.voucher_id
     WHERE r.user_id = ?
@@ -100,6 +102,13 @@ async function findValidVoucherByCode(code, userId) {
   const rows = await query('SELECT * FROM vouchers WHERE code = ? AND active = 1 LIMIT 1', [String(code).trim().toUpperCase()]);
   if (!rows.length) return null;
   const v = rows[0];
+  const amount = Number(v.amount || 0);
+  const type = (v.discount_type || 'fixed').toLowerCase();
+  if (type === 'percent') {
+    if (!Number.isFinite(amount) || amount <= 0 || amount > 100) return null;
+  } else {
+    if (!Number.isFinite(amount) || amount <= 0) return null;
+  }
   if (v.user_id && Number(v.user_id) !== Number(userId)) return null;
   if (v.expires_at && new Date(v.expires_at) < new Date()) return null;
   const usedRows = await query('SELECT COUNT(*) AS total FROM voucher_redemptions WHERE voucher_id = ?', [v.id]);
@@ -167,6 +176,7 @@ async function ensurePremiumMonthlyVoucher(user) {
   return createVoucher({
     code: generateCode('PREM'),
     amount: PREMIUM_VOUCHER_AMOUNT,
+    discountType: 'fixed',
     expiresAt,
     userId: user.id,
     maxUses: 1
@@ -180,7 +190,7 @@ async function resolveAppliedVoucher(req) {
     await ensurePremiumMonthlyVoucher(user);
     const prem = await getActiveUserVoucher(user.id);
     if (prem) {
-      req.session.applied_voucher = { id: prem.id, code: prem.code, amount: Number(prem.amount) };
+      req.session.applied_voucher = { id: prem.id, code: prem.code, amount: Number(prem.amount), discount_type: prem.discount_type || 'fixed' };
     }
   }
   if (req.session.applied_voucher) {
@@ -189,7 +199,7 @@ async function resolveAppliedVoucher(req) {
       req.session.applied_voucher = null;
       return null;
     }
-    req.session.applied_voucher = { id: valid.id, code: valid.code, amount: Number(valid.amount) };
+    req.session.applied_voucher = { id: valid.id, code: valid.code, amount: Number(valid.amount), discount_type: valid.discount_type || 'fixed' };
     return req.session.applied_voucher;
   }
   return null;

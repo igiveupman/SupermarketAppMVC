@@ -48,12 +48,12 @@
   </div>
   <div class="d-flex justify-content-between align-items-center mt-3 flex-wrap gap-2">
     <div class="fw-semibold">
-      <div>Subtotal: $<%= pricing.subtotal.toFixed(2) %></div>
+      <div><span class="summary-label subtotal">Subtotal:</span> $<%= pricing.subtotal.toFixed(2) %></div>
       <% if (pricing.voucherAmount > 0) { %>
         <div class="text-success">Voucher (<%= pricing.voucherCode %>): -$<%= Number(pricing.voucherAmount).toFixed(2) %></div>
       <% } %>
       <div>
-        Delivery fee:
+        <span class="summary-label delivery">Delivery fee:</span>
         <% if (pricing.deliveryFee > 0) { %>
           $<%= pricing.deliveryFee.toFixed(2) %>
         <% } else { %>

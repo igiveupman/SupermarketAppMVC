@@ -4,7 +4,7 @@
     <div class="admin-orders-title">
       <div class="eyebrow">Vouchers</div>
       <h2>Create & Manage</h2>
-      <div class="subline">Issue fixed-amount vouchers for cart discounts.</div>
+      <div class="subline">Issue fixed-amount or percentage vouchers for cart discounts.</div>
     </div>
     <div class="admin-orders-actions">
       <a class="btn btn-outline" href="/admin"><span class="btn-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M14 6l-6 6 6 6"></path></svg></span>Back to Dashboard</a>
@@ -20,7 +20,14 @@
           <input class="form-control" type="text" name="code" placeholder="AUTO-GENERATE" />
         </div>
         <div class="col-md-3">
-          <label class="form-label">Amount ($)</label>
+          <label class="form-label">Discount Type</label>
+          <select class="form-select" name="discount_type">
+            <option value="fixed" selected>Fixed ($)</option>
+            <option value="percent">Percentage (%)</option>
+          </select>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Amount</label>
           <input class="form-control" type="number" name="amount" step="0.01" min="0.01" required />
         </div>
         <div class="col-md-3">
@@ -50,6 +57,7 @@
               <tr>
                 <th>Code</th>
                 <th>Amount</th>
+                <th>Type</th>
                 <th>User</th>
                 <th>Uses</th>
                 <th>Expires</th>
@@ -61,7 +69,11 @@
               <% vouchers.forEach(v => { %>
                 <tr>
                   <td><strong><%= v.code %></strong></td>
-                  <td>$<%= Number(v.amount).toFixed(2) %></td>
+                  <td>
+                    <% const isPercent = String(v.discount_type || 'fixed').toLowerCase() === 'percent'; %>
+                    <%= isPercent ? (Number(v.amount).toFixed(0) + '%') : ('$' + Number(v.amount).toFixed(2)) %>
+                  </td>
+                  <td><%= isPercent ? 'Percent' : 'Fixed' %></td>
                   <td><%= v.user_id ? ('#' + v.user_id) : 'Global' %></td>
                   <td><%= Number(v.redeemed_count || 0) %>/<%= Number(v.max_uses || 1) %></td>
                   <td><%= new Date(v.expires_at).toLocaleDateString() %></td>

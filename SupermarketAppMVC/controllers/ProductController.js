@@ -15,6 +15,7 @@ module.exports = {
   const trendingRaw = (req.query.trending || '').toString().trim().toLowerCase();
   const trendingMode = ['1','true','on','yes'].includes(trendingRaw);
   const featuredOnly = ['1','true','on','yes'].includes((req.query.featured || '').toString().toLowerCase());
+  const effectiveFeaturedOnly = featuredOnly || trendingMode;
     // Map UI label to DB category value if needed
     if (['Fruits and Vegetables','Fruits & Vegs','Fruits & Vegetables'].includes(category)) {
       category = 'Produce';
@@ -26,7 +27,7 @@ module.exports = {
   let page = parseInt(req.query.page || '1', 10);
   if (isNaN(page) || page < 1) page = 1;
 
-  const commonFilters = { search, category, featured: featuredOnly };
+  const commonFilters = { search, category, featured: effectiveFeaturedOnly };
   Product.countFiltered(commonFilters, (countErr, totalCount) => {
     if (countErr) return res.status(500).send(countErr);
     const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
