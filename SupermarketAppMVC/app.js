@@ -156,6 +156,16 @@ connection.query('ALTER TABLE users ADD COLUMN subscription_cancel_effective_at 
         console.error('Failed to ensure subscription_cancel_effective_at column:', dErr.code);
     }
 });
+connection.query('ALTER TABLE users ADD COLUMN premium_20_reward_issued TINYINT(1) NOT NULL DEFAULT 0', (dErr) => {
+    if (dErr && dErr.code !== 'ER_DUP_FIELDNAME') {
+        console.error('Failed to ensure premium_20_reward_issued column:', dErr.code);
+    }
+});
+connection.query('ALTER TABLE users ADD COLUMN essential_20_reward_issued TINYINT(1) NOT NULL DEFAULT 0', (dErr) => {
+    if (dErr && dErr.code !== 'ER_DUP_FIELDNAME') {
+        console.error('Failed to ensure essential_20_reward_issued column:', dErr.code);
+    }
+});
 
 // Ensure payment metadata fields exist on orders (for refunds)
 connection.query('ALTER TABLE orders ADD COLUMN payment_provider VARCHAR(20) NULL', (oErr) => {

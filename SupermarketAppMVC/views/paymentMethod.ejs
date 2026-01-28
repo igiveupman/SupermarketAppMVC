@@ -13,6 +13,7 @@
     <% if (pricing.voucherAmount > 0) { %>
       <li class="list-group-item d-flex justify-content-between text-success"><span>Voucher (<%= pricing.voucherCode %>)</span><span>-$<%= Number(pricing.voucherAmount).toFixed(2) %></span></li>
     <% } %>
+    <li class="list-group-item d-flex justify-content-between"><span class="summary-label">GST (10%)</span><span>$<%= Number(pricing.gstAmount || 0).toFixed(2) %></span></li>
     <li class="list-group-item d-flex justify-content-between fw-semibold"><span>Total</span><span>$<%= pricing.total.toFixed(2) %></span></li>
   </ul>
   <div class="mb-4">

@@ -60,6 +60,7 @@
           $0.00 <span class="text-success small ms-1">Free delivery applied</span>
         <% } %>
       </div>
+      <div><span class="summary-label">GST (10%):</span> $<%= Number(pricing.gstAmount || 0).toFixed(2) %></div>
       <div class="mt-1">Total: $<%= pricing.total.toFixed(2) %></div>
     </div>
     <div class="voucher-panel">

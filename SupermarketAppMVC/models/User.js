@@ -10,7 +10,7 @@ const User = {
   // List all users (admin page)
   getAll(callback) {
     db.query(
-      'SELECT id, username, email, address, contact, role, free_delivery, subscription_tier, subscription_price, subscription_started_at, subscription_cancel_reason, subscription_cancelled_at, subscription_cancel_effective_at FROM users',
+      'SELECT id, username, email, address, contact, role, free_delivery, subscription_tier, subscription_price, subscription_started_at, subscription_cancel_reason, subscription_cancelled_at, subscription_cancel_effective_at, premium_20_reward_issued, essential_20_reward_issued FROM users',
       (err, results) => callback(err, results)
     );
   },
@@ -18,7 +18,7 @@ const User = {
   // Fetch one user by id
   getById(id, callback) {
     db.query(
-      'SELECT id, username, email, address, contact, role, free_delivery, subscription_tier, subscription_price, subscription_started_at, subscription_cancel_reason, subscription_cancelled_at, subscription_cancel_effective_at FROM users WHERE id = ?',
+      'SELECT id, username, email, address, contact, role, free_delivery, subscription_tier, subscription_price, subscription_started_at, subscription_cancel_reason, subscription_cancelled_at, subscription_cancel_effective_at, premium_20_reward_issued, essential_20_reward_issued FROM users WHERE id = ?',
       [id],
       (err, results) => {
         if (err) return callback(err);
@@ -78,6 +78,23 @@ const User = {
   cancelSubscription(id, reason, cancelledAt, effectiveAt, callback) {
     const sql = 'UPDATE users SET subscription_cancel_reason = ?, subscription_cancelled_at = ?, subscription_cancel_effective_at = ? WHERE id = ?';
     db.query(sql, [reason || null, cancelledAt || null, effectiveAt || null, id], (err, result) => {
+      if (err) return callback(err);
+      callback(null, { changedRows: result.changedRows, affectedRows: result.affectedRows });
+    });
+  },
+
+  // Mark premium 20-orders reward as issued
+  markPremiumRewardIssued(id, callback) {
+    const sql = 'UPDATE users SET premium_20_reward_issued = 1 WHERE id = ?';
+    db.query(sql, [id], (err, result) => {
+      if (err) return callback(err);
+      callback(null, { changedRows: result.changedRows, affectedRows: result.affectedRows });
+    });
+  },
+
+  markEssentialRewardIssued(id, callback) {
+    const sql = 'UPDATE users SET essential_20_reward_issued = 1 WHERE id = ?';
+    db.query(sql, [id], (err, result) => {
       if (err) return callback(err);
       callback(null, { changedRows: result.changedRows, affectedRows: result.affectedRows });
     });

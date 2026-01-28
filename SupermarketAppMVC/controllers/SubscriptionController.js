@@ -22,21 +22,23 @@ const TIERS = [
     id: 'essential',
     name: 'Essential',
     price: 5.9,
-    savings: 'Monthly savings: free delivery on $40+ orders',
+    savings: 'Monthly savings: free delivery on $40+ orders + $5 reward at 20 orders',
     benefits: [
       'Everything in Basic',
-      'Free delivery over $40'
+      'Free delivery over $40',
+      'One-time $5 voucher after 20 orders'
     ]
   },
   {
     id: 'premium',
     name: 'Premium',
     price: 12.9,
-    savings: 'Monthly savings: free delivery + monthly voucher',
+    savings: 'Monthly savings: free delivery + monthly voucher + $20 reward at 20 orders',
     benefits: [
       'Everything in Essential',
       'Free delivery on all orders',
-      'Monthly voucher added to your account'
+      'Monthly voucher added to your account',
+      'One-time $20 voucher after 20 orders'
     ]
   }
 ];

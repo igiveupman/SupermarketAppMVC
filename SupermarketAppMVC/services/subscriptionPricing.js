@@ -1,5 +1,6 @@
 const BASE_DELIVERY_FEE = 6.0;
 const ESSENTIAL_FREE_THRESHOLD = 40.0;
+const GST_RATE = 0.10;
 
 const DISCOUNT_RATES = {
   basic: 0,
@@ -79,7 +80,9 @@ function computeCartPricing(cart, user, voucher) {
       voucherEligible = voucherAmount <= discountedSubtotal;
     }
   }
-  const total = roundMoney(totalBeforeVoucher - (voucherEligible ? voucherAmount : 0));
+  const taxableAmount = roundMoney(totalBeforeVoucher - (voucherEligible ? voucherAmount : 0));
+  const gstAmount = roundMoney(taxableAmount * GST_RATE);
+  const total = roundMoney(taxableAmount + gstAmount);
 
   return {
     tier,
@@ -90,6 +93,8 @@ function computeCartPricing(cart, user, voucher) {
     deliveryFee,
     total,
     totalBeforeVoucher,
+    taxableAmount,
+    gstAmount,
     voucherAmount: voucherEligible ? voucherAmount : 0,
     voucherCode: voucherEligible && voucher && voucher.code ? String(voucher.code) : null,
     voucherType: voucher ? voucherType : null,
@@ -98,6 +103,7 @@ function computeCartPricing(cart, user, voucher) {
     freeDeliveryApplied,
     freeDeliveryThreshold: ESSENTIAL_FREE_THRESHOLD,
     baseDeliveryFee: BASE_DELIVERY_FEE,
+    gstRate: GST_RATE,
     items
   };
 }

@@ -14,32 +14,38 @@
     <% const voucherAmt = Number(o.voucher_amount || 0); %>
     <% const deliveryFee = Number(o.delivery_fee || 0); %>
     <% const savingsAmount = Number(o.savings_amount || 0); %>
-    <% const derivedTotal = (itemSubtotal + deliveryFee - voucherAmt); %>
+    <% const taxable = (itemSubtotal + deliveryFee - voucherAmt); %>
+    <% const gstAmount = taxable * 0.10; %>
+    <% const derivedTotal = (taxable + gstAmount); %>
     <% const recordedTotal = Number(o.total || 0); %>
     <div class="list-group-item mb-3 shadow-sm rounded-md order-card" id="order-<%= o.id %>">
-      <div class="d-flex justify-content-between align-items-center flex-wrap">
+      <div class="order-header">
         <div>
-          <strong>Order #<%= orderNumber %></strong>
-          <div class="text-muted small">Order ID: <%= o.id %></div>
-          <div class="text-muted small">Placed: <%= new Date(o.created_at).toLocaleString() %></div>
-          <div class="small">Method: <%= o.delivery_method %> | Fee: $<%= Number(o.delivery_fee).toFixed(2) %></div>
-          <div class="small">Items subtotal: $<%= itemSubtotal.toFixed(2) %></div>
-          <% if (voucherAmt > 0) { %>
-            <div class="small text-success">Voucher (<%= o.voucher_code || 'Applied' %>): -$<%= voucherAmt.toFixed(2) %></div>
-          <% } %>
-          <div class="fw-semibold">Total: $<%= derivedTotal.toFixed(2) %></div>
-          <% if (savingsAmount > 0) { %>
-            <div class="small text-success">Savings this order: $<%= savingsAmount.toFixed(2) %></div>
-          <% } %>
-          <% if (Math.abs(derivedTotal - recordedTotal) > 0.01) { %>
-            <div class="small text-warning">Recorded total differs: $<%= recordedTotal.toFixed(2) %></div>
-          <% } %>
+          <div class="order-title">Order #<%= orderNumber %></div>
+          <div class="order-meta">Placed <%= new Date(o.created_at).toLocaleString() %></div>
+        </div>
+        <div class="order-total">
+          <div class="order-total-label">Total</div>
+          <div class="order-total-amount">$<%= derivedTotal.toFixed(2) %></div>
         </div>
       </div>
-      <div class="mt-2">
+      <div class="order-chip-row">
+        <span class="order-chip">ID <%= o.id %></span>
+        <span class="order-chip">Method <%= o.delivery_method %></span>
+        <span class="order-chip">Fee $<%= Number(o.delivery_fee).toFixed(2) %></span>
+        <% if (voucherAmt > 0) { %>
+          <span class="order-chip success">Voucher -$<%= voucherAmt.toFixed(2) %></span>
+        <% } %>
+        <span class="order-chip">GST $<%= gstAmount.toFixed(2) %></span>
+        <% if (savingsAmount > 0) { %>
+          <span class="order-chip success">Saved $<%= savingsAmount.toFixed(2) %></span>
+        <% } %>
+      </div>
+      <div class="order-subtotal">Items $<%= itemSubtotal.toFixed(2) %></div>
+      <div class="order-actions">
         <a class="btn btn-secondary btn-sm" href="/orders/<%= o.id %>/invoice?auto=1">Print Invoice</a>
       </div>
-      <hr/>
+      <hr class="order-divider"/>
       <table class="table table-sm">
         <thead>
           <tr><th>Product</th><th>Qty</th><th>Unit Price</th><th>Line Total</th></tr>
@@ -127,4 +133,18 @@
 <script>
   // No JS needed; invoice page handles printing when opened with ?auto=1
 </script>
-<style></style>
+<style>
+  .order-card { padding:18px; border:1px solid #e2e8f0; background:#fff; border-radius:16px; box-shadow:0 12px 24px -18px rgba(15,23,42,.35); }
+  .order-header { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; }
+  .order-title { font-weight:700; font-size:1.15rem; color:#0f172a; }
+  .order-meta { color:#64748b; font-size:.85rem; }
+  .order-total { text-align:right; }
+  .order-total-label { font-size:.75rem; text-transform:uppercase; letter-spacing:.12em; color:#94a3b8; }
+  .order-total-amount { font-size:1.2rem; font-weight:700; color:#0f172a; }
+  .order-chip-row { display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; }
+  .order-chip { background:#f8fafc; border:1px solid #e2e8f0; color:#475569; padding:4px 10px; border-radius:999px; font-size:.78rem; font-weight:600; }
+  .order-chip.success { background:#ecfdf5; border-color:#a7f3d0; color:#047857; }
+  .order-subtotal { margin-top:8px; color:#64748b; font-size:.9rem; }
+  .order-actions { margin-top:10px; }
+  .order-divider { margin:16px 0; }
+</style>

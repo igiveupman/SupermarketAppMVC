@@ -4,6 +4,7 @@ const { getTier } = require('./subscriptionPricing');
 
 const PREMIUM_VOUCHER_AMOUNT = Number(process.env.PREMIUM_VOUCHER_AMOUNT || 5);
 const PREMIUM_VOUCHER_DAYS = 30;
+const MILESTONE_VOUCHER_DAYS = 30;
 
 function query(sql, params) {
   return new Promise((resolve, reject) => {
@@ -205,6 +206,19 @@ async function resolveAppliedVoucher(req) {
   return null;
 }
 
+async function issueMilestoneVoucher(userId, amount, codePrefix) {
+  if (!userId) return null;
+  const expiresAt = new Date(Date.now() + MILESTONE_VOUCHER_DAYS * 24 * 60 * 60 * 1000);
+  return createVoucher({
+    code: generateCode(codePrefix || 'MILE'),
+    amount,
+    discountType: 'fixed',
+    expiresAt,
+    userId,
+    maxUses: 1
+  });
+}
+
 module.exports = {
   generateCode,
   createVoucher,
@@ -215,5 +229,6 @@ module.exports = {
   redeemVoucher,
   ensurePremiumMonthlyVoucher,
   resolveAppliedVoucher,
-  deleteVoucher
+  deleteVoucher,
+  issueMilestoneVoucher
 };

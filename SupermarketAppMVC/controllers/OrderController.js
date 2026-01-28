@@ -6,6 +6,7 @@
 const Order = require('../models/Order');
 const db = require('../db');
 const { BASE_DELIVERY_FEE } = require('../services/subscriptionPricing');
+const GST_RATE = 0.10;
 
 function safeParseSnapshot(raw) {
   if (!raw) return null;
@@ -116,9 +117,11 @@ module.exports = {
           const deliveryFee = Number(order.delivery_fee || 0);
           const voucherAmount = Number(order.voucher_amount || 0);
           const savingsAmount = Math.max(0, Number(BASE_DELIVERY_FEE) - deliveryFee) + voucherAmount;
-          const computedTotal = +(subtotal + deliveryFee - voucherAmount).toFixed(2);
+          const taxableAmount = +(subtotal + deliveryFee - voucherAmount).toFixed(2);
+          const gstAmount = +(taxableAmount * GST_RATE).toFixed(2);
+          const computedTotal = +(taxableAmount + gstAmount).toFixed(2);
           const total = Number(order.total || 0) || computedTotal;
-          return res.render('invoice', { user, order, items, subtotal: +subtotal.toFixed(2), deliveryFee, voucherAmount, total, savingsAmount, displayOrderNumber });
+          return res.render('invoice', { user, order, items, subtotal: +subtotal.toFixed(2), deliveryFee, voucherAmount, gstAmount, total, savingsAmount, displayOrderNumber });
         });
         return;
       }
@@ -147,9 +150,11 @@ module.exports = {
           const deliveryFee = Number(order.delivery_fee || 0);
           const voucherAmount = Number(order.voucher_amount || 0);
           const savingsAmount = Math.max(0, Number(BASE_DELIVERY_FEE) - deliveryFee) + voucherAmount;
-          const computedTotal = +(subtotal + deliveryFee - voucherAmount).toFixed(2);
+          const taxableAmount = +(subtotal + deliveryFee - voucherAmount).toFixed(2);
+          const gstAmount = +(taxableAmount * GST_RATE).toFixed(2);
+          const computedTotal = +(taxableAmount + gstAmount).toFixed(2);
           const total = Number(order.total || 0) || computedTotal;
-          res.render('invoice', { user, order, items: normalizedItems, subtotal: +subtotal.toFixed(2), deliveryFee, voucherAmount, total, savingsAmount, displayOrderNumber });
+          res.render('invoice', { user, order, items: normalizedItems, subtotal: +subtotal.toFixed(2), deliveryFee, voucherAmount, gstAmount, total, savingsAmount, displayOrderNumber });
         });
       });
     });

@@ -4,7 +4,7 @@ const Product = require('../models/Product');
 const Order = require('../models/Order');
 const db = require('../db');
 const netsQr = require('../services/nets');
-const { computeCartPricing, roundMoney } = require('../services/subscriptionPricing');
+const { computeCartPricing, roundMoney, getTier } = require('../services/subscriptionPricing');
 const vouchers = require('../services/vouchers');
 
 // Helper: adjust product quantity in DB by delta (can be positive to restock or negative to reserve)
@@ -373,10 +373,39 @@ module.exports = {
             console.log('Order stored id', data.orderId);
       // Store last order id for invoice link on success page
       req.session.lastOrderId = data.orderId;
-            if (data.orderId && voucher) {
-              vouchers.redeemVoucher(voucher.id, req.session.user.id, data.orderId)
-                .catch((e) => console.error('Failed to redeem voucher:', e));
+          if (data.orderId && voucher) {
+            vouchers.redeemVoucher(voucher.id, req.session.user.id, data.orderId)
+              .catch((e) => console.error('Failed to redeem voucher:', e));
+          }
+          if (data.orderId) {
+            const User = require('../models/User');
+            const Order = require('../models/Order');
+            const currentTier = getTier(req.session.user);
+            const premiumIssued = !!req.session.user.premium_20_reward_issued;
+            const essentialIssued = !!req.session.user.essential_20_reward_issued;
+            if ((currentTier === 'premium' && !premiumIssued) || (currentTier === 'essential' && !essentialIssued)) {
+              Order.countByUser(req.session.user.id, (cErr, totalCount) => {
+                if (cErr) return;
+                if (Number(totalCount) >= 20) {
+                  const isPremium = currentTier === 'premium';
+                  const amount = isPremium ? 20 : 5;
+                  const prefix = isPremium ? 'PREM20' : 'ESS20';
+                  vouchers.issueMilestoneVoucher(req.session.user.id, amount, prefix)
+                    .then(() => {
+                      const mark = isPremium ? User.markPremiumRewardIssued : User.markEssentialRewardIssued;
+                      mark.call(User, req.session.user.id, () => {
+                        if (isPremium) {
+                          req.session.user.premium_20_reward_issued = 1;
+                        } else {
+                          req.session.user.essential_20_reward_issued = 1;
+                        }
+                      });
+                    })
+                    .catch(() => {});
+                }
+              });
             }
+          }
           }
         });
         req.session.payment_reference = null;

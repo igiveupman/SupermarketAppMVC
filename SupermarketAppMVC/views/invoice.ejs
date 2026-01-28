@@ -92,6 +92,7 @@
     <% if (Number(voucherAmount || 0) > 0) { %>
       <div class="row-line"><span class="text-success">Voucher</span><span>-$<%= Number(voucherAmount || 0).toFixed(2) %></span></div>
     <% } %>
+    <div class="row-line"><span class="summary-label">GST (10%)</span><span>$<%= Number(gstAmount || 0).toFixed(2) %></span></div>
     <div class="row-line total"><span>Total</span><span>$<%= Number(total || 0).toFixed(2) %></span></div>
   </section>
 

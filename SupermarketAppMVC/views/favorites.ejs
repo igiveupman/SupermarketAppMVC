@@ -1,30 +1,19 @@
 <% /* Favorites page: shows products the user has favorited; supports add-to-cart */ %>
 <%- include('partials/header', { user, pageTitle: 'Favourites', currentPage: 'favorites' }) %>
-<h2 class="fw-semibold mb-3">Your Favourites</h2>
+<div class="page-header">
+  <div>
+    <div class="page-eyebrow">Favourites</div>
+    <h2 class="page-title">Your Favourites</h2>
+    <p class="page-subtitle">Quick access to items you love.</p>
+  </div>
+</div>
 <% if (!products.length) { %>
   <div class="alert alert-info">No favourites yet. Tap the heart on any product to add it here.</div>
+  <a href="/shopping" class="btn btn-primary mt-2">Browse Products</a>
 <% } %>
 <div class="products-grid">
   <% products.forEach(p => { %>
-    <div class="product-card">
-      <div class="d-flex justify-content-between align-items-start mb-1">
-        <div class="product-meta"><%= (p.category === 'Produce' ? 'Fruits & Veg' : (p.category || 'Uncategorized')) %></div>
-        <a href="/favorites/toggle/<%= p.id %>" class="favorite-toggle" title="Remove from favourites">
-          <span class="heart favorited"><%- '&#10084;' %></span>
-        </a>
-      </div>
-      <a href="/product/<%= p.id %>" class="text-decoration-none"><h5><%= p.productName %></h5></a>
-      <img src="/images/<%= p.image %>" alt="<%= p.productName %>" />
-      <div class="price-tag">$<%= p.price.toFixed(2) %></div>
-      <div class="stock">Stock: <%= p.quantity %></div>
-      <form action="/add-to-cart/<%= p.id %>" method="POST" class="mt-auto">
-        <input type="hidden" name="returnTo" value="/favorites">
-        <div class="input-group mb-2">
-          <input type="number" name="quantity" class="form-control qty-input" min="1" max="<%= p.quantity %>" value="1" required>
-        </div>
-        <button type="submit" class="btn btn-primary w-100"><span class="btn-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="9" cy="19" r="1.5"></circle><circle cx="17" cy="19" r="1.5"></circle><path d="M5 6h16l-2 9H7L5 6z"></path><path d="M5 6L4 3H2"></path></svg></span>Add to Cart</button>
-      </form>
-    </div>
+    <%- include('partials/productCard', { p, user, showFavorite: true, clickable: true, returnTo: '/favorites' }) %>
   <% }) %>
 </div>
 <%- include('partials/footer') %>
@@ -32,10 +21,6 @@
   <div class="toast-bottom" id="favToast"><span><%= messages.join(', ') %></span></div>
 <% } %>
 <style>
-.favorite-toggle { text-decoration:none; }
-.heart { font-size:1.2rem; color:#cbd5e1; transition:.2s; }
-.heart.favorited { color:#e11d48; }
-.heart:hover { transform:scale(1.15); color:#e11d48; }
 .toast-bottom { position:fixed; left:50%; bottom:24px; transform:translateX(-50%); background:#0f172a; color:#fff; padding:10px 16px; border-radius:999px; box-shadow:0 12px 30px -12px rgba(15,23,42,.45); z-index:999; font-size:.9rem; }
 </style>
 <% if (messages && messages.length) { %>

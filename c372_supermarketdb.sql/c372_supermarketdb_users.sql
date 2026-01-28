@@ -37,6 +37,8 @@ CREATE TABLE `users` (
   `subscription_cancel_reason` text DEFAULT NULL,
   `subscription_cancelled_at` datetime DEFAULT NULL,
   `subscription_cancel_effective_at` datetime DEFAULT NULL,
+  `premium_20_reward_issued` tinyint(1) NOT NULL DEFAULT '0',
+  `essential_20_reward_issued` tinyint(1) NOT NULL DEFAULT '0',
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
