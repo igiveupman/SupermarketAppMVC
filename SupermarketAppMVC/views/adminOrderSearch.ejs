@@ -1,0 +1,85 @@
+<%- include('partials/header', { user, pageTitle: 'Order Search', currentPage: 'adminDashboard', messages: (typeof messages !== 'undefined' ? messages : []), errors: (typeof errors !== 'undefined' ? errors : []) }) %>
+<div class="container-wide">
+  <div class="admin-orders-header">
+    <div class="admin-orders-title">
+      <div class="eyebrow">Orders</div>
+      <h2>Search by Reference</h2>
+      <div class="subline">Find orders here</div>
+    </div>
+    <div class="admin-orders-actions">
+      <a class="btn btn-outline" href="/admin"><span class="btn-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M14 6l-6 6 6 6"></path></svg></span>Back to Dashboard</a>
+      <a class="btn btn-outline" href="/admin/refund-requests"><span class="btn-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 12h18"></path><path d="M7 8h10"></path><path d="M7 16h10"></path></svg></span>Refund Requests</a>
+    </div>
+  </div>
+
+  <form class="order-search-form" method="get" action="/admin/orders/search">
+    <input class="form-control" type="text" name="q" value="<%= query || '' %>" placeholder="Payment reference or order ID" />
+    <select class="form-select" name="user_id">
+      <option value="">All users</option>
+      <% (users || []).forEach((u) => { %>
+        <option value="<%= u.id %>" <%= userId && Number(userId) === Number(u.id) ? 'selected' : '' %>>
+          <%= u.id %> - <%= u.username %> (<%= u.email %>)
+        </option>
+      <% }) %>
+    </select>
+    <button class="btn btn-primary" type="submit">Search</button>
+  </form>
+
+  <% if ((query || userId) && !orders.length) { %>
+    <div class="alert alert-info mt-3">No orders found for the selected filters.</div>
+  <% } %>
+
+  <% if (orders && orders.length) { %>
+    <div class="list-group mt-3">
+      <% orders.forEach((o) => { %>
+        <% const provider = (o.payment_provider || o.delivery_method || 'unknown').toUpperCase(); %>
+        <% const itemSubtotal = (itemsByOrder[o.id] || []).reduce((s,it)=> s + Number(it.total_price || 0), 0); %>
+        <div class="list-group-item mb-3">
+          <div class="d-flex justify-content-between flex-wrap gap-2">
+            <div>
+              <strong>Order #<%= o.id %></strong> Â· <span class="text-muted"><%= new Date(o.created_at).toLocaleString() %></span>
+              <div class="small text-muted">User: <strong><%= o.username %></strong> (<%= o.email %>)</div>
+              <div class="small">Payment: <strong><%= provider %></strong></div>
+              <% if (o.payment_reference) { %>
+                <div class="small text-muted">Payment Ref: <%= o.payment_reference %></div>
+              <% } %>
+              <% if (o.payment_order_id) { %>
+                <div class="small text-muted">Provider Order ID: <%= o.payment_order_id %></div>
+              <% } %>
+            </div>
+            <div class="text-end">
+              <div class="fw-semibold">Order Total: $<%= Number(o.total).toFixed(2) %></div>
+              <div class="small text-muted">Items: $<%= itemSubtotal.toFixed(2) %></div>
+              <a class="small" href="/admin/users/<%= o.user_id %>/orders#order-<%= o.id %>">View User Orders</a>
+            </div>
+          </div>
+          <% if (itemsByOrder[o.id] && itemsByOrder[o.id].length) { %>
+            <table class="table table-sm mt-2">
+              <thead>
+                <tr>
+                  <th>Item</th>
+                  <th class="text-end">Qty</th>
+                  <th class="text-end">Price</th>
+                  <th class="text-end">Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% (itemsByOrder[o.id] || []).forEach(it => { %>
+                  <tr>
+                    <td><%= it.productName %></td>
+                    <td class="text-end"><%= it.quantity %></td>
+                    <td class="text-end">$<%= (Number(it.total_price || 0) / Number(it.quantity || 1)).toFixed(2) %></td>
+                    <td class="text-end">$<%= Number(it.total_price || 0).toFixed(2) %></td>
+                  </tr>
+                <% }) %>
+              </tbody>
+            </table>
+          <% } %>
+        </div>
+      <% }) %>
+    </div>
+  <% } %>
+</div>
+<%- include('partials/footer') %>
+
+

@@ -49,7 +49,14 @@
     <div class="quick-icon"><svg viewBox="0 0 24 24"><path d="M4 7h16v10H4z"></path><path d="M7 7v10"></path><path d="M17 7v10"></path><circle cx="9.5" cy="12" r="1.4"></circle><circle cx="14.5" cy="12" r="1.4"></circle></svg></div>
     <div>
       <h4>Vouchers</h4>
-      <p>Create fixed-amount discount codes.</p>
+      <p>Create discount codes for customers.</p>
+    </div>
+  </a>
+  <a class="admin-quick-card" href="/admin/orders/search" aria-label="Search orders">
+    <div class="quick-icon"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6"></circle><path d="M20 20l-3.5-3.5"></path></svg></div>
+    <div>
+      <h4>Orders</h4>
+      <p>Find orders by reference.</p>
     </div>
   </a>
   <a class="admin-quick-card" href="/logout" aria-label="Logout">
@@ -68,18 +75,5 @@
 <% } %>
 <%- include('partials/footer') %>
 
-<style>
-  .admin-hero { display:flex; align-items:center; justify-content:space-between; gap:16px; padding:20px 22px; border-radius:18px; border:1px solid #e6e1da; background:linear-gradient(120deg,#ffffff,#f2ede6); box-shadow:0 18px 36px -28px rgba(15,23,42,.45); flex-wrap:wrap; }
-  .admin-title { margin:0; font-size:36px; font-weight:700; letter-spacing:.2px; }
-  .admin-eyebrow { text-transform:uppercase; letter-spacing:.24em; font-size:.7rem; color:#7a8696; font-weight:600; }
-  .admin-hero-actions { display:flex; gap:10px; flex-wrap:wrap; }
-  .admin-hero-actions .btn { min-width: 140px; justify-content: center; }
-  .admin-quick-grid { display:grid; gap:16px; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); }
-  .admin-quick-card { display:flex; gap:14px; align-items:center; padding:16px 18px; border-radius:16px; border:1px solid #e6e1da; background:#fff; box-shadow:0 12px 24px -24px rgba(15,23,42,.35); text-decoration:none; color:#1f2933; transition:transform .18s ease, box-shadow .18s ease; }
-  .admin-quick-card:hover { transform:translateY(-2px); box-shadow:0 16px 28px -24px rgba(15,23,42,.45); }
-  .admin-quick-card h4 { margin:0 0 4px; font-size:1.02rem; font-weight:700; }
-  .admin-quick-card p { margin:0; color:#667085; font-size:.9rem; }
-  .quick-icon { width:44px; height:44px; border-radius:12px; display:flex; align-items:center; justify-content:center; background:#f3f6f9; color:#0b3b5c; }
-  .quick-icon svg { width:22px; height:22px; stroke:currentColor; fill:none; stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round; }
-  @media (max-width:720px) { .admin-hero-actions { width:100%; } }
-</style>
+
+

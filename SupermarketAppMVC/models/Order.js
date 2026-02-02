@@ -134,10 +134,11 @@ const Order = {
   ,
   // Create a refund request for an order (customer-side)
   setRefundRequest(orderId, userId, data, callback) {
-    const sql = 'UPDATE orders SET refund_request_status = ?, refund_request_reason = ?, refund_request_amount = ?, refund_requested_at = ? WHERE id = ? AND user_id = ?';
+    const sql = 'UPDATE orders SET refund_request_status = ?, refund_request_reason = ?, refund_request_type = ?, refund_request_amount = ?, refund_requested_at = ? WHERE id = ? AND user_id = ?';
     const params = [
       data.refund_request_status || null,
       data.refund_request_reason || null,
+      data.refund_request_type || null,
       data.refund_request_amount || null,
       data.refund_requested_at || null,
       orderId,

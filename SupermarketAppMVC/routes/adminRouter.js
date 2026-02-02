@@ -56,6 +56,8 @@ router.post('/users/:id/orders/clear', (req, res) => {
 router.get('/users/:id/orders', AdminController.userOrders);
 // View pending refund requests (admin)
 router.get('/refund-requests', AdminController.refundRequests);
+// Search orders by reference (admin)
+router.get('/orders/search', AdminController.orderSearch);
 // Voucher management (admin)
 router.get('/vouchers', AdminController.vouchersPage);
 router.post('/vouchers', AdminController.createVoucher);

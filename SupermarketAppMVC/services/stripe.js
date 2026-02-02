@@ -22,7 +22,18 @@ async function createPaymentIntent(amount, metadata) {
   return client.paymentIntents.create({
     amount: toMinorUnits(amount),
     currency: 'sgd',
-    metadata: metadata || {}
+    payment_method_types: ['card'],
+    metadata: metadata || {},
+    confirm: false
+  });
+}
+
+// Confirm a PaymentIntent with card payment method.
+async function confirmPaymentIntent(paymentIntentId, paymentMethodId) {
+  const client = getClient();
+  if (!client) throw new Error('Stripe secret key is missing.');
+  return client.paymentIntents.confirm(paymentIntentId, {
+    payment_method: paymentMethodId
   });
 }
 
@@ -59,6 +70,7 @@ async function createRefund(paymentIntentId, amount) {
 
 module.exports = {
   createPaymentIntent,
+  confirmPaymentIntent,
   createPayNowIntent,
   retrievePaymentIntent,
   createRefund,

@@ -23,6 +23,8 @@
         <% const provider = (o.payment_provider || o.delivery_method || '').toLowerCase(); %>
         <% const isRefunded = o.refund_status && String(o.refund_status).toLowerCase() === 'refunded'; %>
         <% const reqStatus = o.refund_request_status ? String(o.refund_request_status).toLowerCase() : ''; %>
+        <% const refundTypeMap = { item_not_received: 'Item not received', item_damaged: 'Item arrived damaged', wrong_item: 'Wrong item received', changed_mind: 'Changed mind', other: 'Other' }; %>
+        <% const refundTypeLabel = o.refund_request_type ? (refundTypeMap[o.refund_request_type] || o.refund_request_type) : null; %>
         <div class="list-group-item mb-3">
           <div class="d-flex justify-content-between">
             <div>
@@ -72,7 +74,10 @@
                 <% } %>
               </div>
             <% } else if (reqStatus === 'pending') { %>
-              <div class="w-100 small text-muted mt-2">Request: <%= o.refund_request_reason || 'No reason provided' %></div>
+              <% if (refundTypeLabel) { %>
+                <div class="w-100 small text-muted mt-2">Request type: <%= refundTypeLabel %></div>
+              <% } %>
+              <div class="w-100 small text-muted mt-1">Request: <%= o.refund_request_reason || 'No reason provided' %></div>
               <div class="d-flex align-items-center gap-2 flex-wrap mt-2">
                 <form action="/admin/orders/<%= o.id %>/refund/approve" method="post" class="d-flex align-items-center gap-2" onsubmit="return confirm('Approve and process this refund?');">
                   <input class="form-control form-control-sm" type="number" name="amount" step="0.01" min="0.01" max="<%= Number(o.total).toFixed(2) %>" value="<%= Number(o.refund_request_amount || o.total).toFixed(2) %>" style="max-width:120px;" />
@@ -117,12 +122,5 @@
   <% } %>
 </div>
 <%- include('partials/footer') %>
-<style>
-  .admin-orders-header { display:flex; align-items:center; justify-content:space-between; gap:16px; padding:18px 20px; border-radius:16px; background:linear-gradient(120deg,#ffffff,#f3efe9); border:1px solid #e6e1da; box-shadow:0 12px 28px -24px rgba(15,23,42,.4); margin: 10px 0 18px; flex-wrap:wrap; }
-  .admin-orders-title h2 { margin:0; font-size:28px; font-weight:700; letter-spacing:.2px; }
-  .admin-orders-title .eyebrow { text-transform:uppercase; letter-spacing:.2em; font-size:.7rem; color:#7a8696; font-weight:600; }
-  .admin-orders-title .subline { color:#667085; font-size:.95rem; }
-  .admin-orders-actions { display:flex; gap:10px; align-items:center; }
-  .admin-orders-actions form { margin:0; }
-  @media (max-width:720px){ .admin-orders-actions { width:100%; justify-content:flex-start; } }
-</style>
+
+

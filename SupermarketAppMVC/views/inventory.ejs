@@ -3,103 +3,137 @@
 <% const invSearch = (typeof search !== 'undefined') ? search : ''; %>
 <% const invCategory = (typeof category !== 'undefined') ? category : ''; %>
 <% const invFeaturedOnly = (typeof featuredOnly !== 'undefined') ? featuredOnly : false; %>
-<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
-  <h2 class="mb-0">Inventory
-    <span class="featured-badge ms-2" title="Featured products">
-      <span class="star">&#11088;</span>
-      <span class="count"><%= typeof featuredCount !== 'undefined' ? featuredCount : 0 %></span>
-    </span>
-  </h2>
-  <div>
-    <a href="/addProduct" class="btn btn-primary btn-sm">Add Product</a>
+<% const totalProducts = (products || []).length; %>
+<% const featuredTotal = typeof featuredCount !== 'undefined' ? featuredCount : 0; %>
+<% const lowStockCount = (products || []).filter(p => Number(p.quantity || 0) <= 5).length; %>
+
+<section class="inventory-shell">
+  <div class="inventory-hero">
+    <div>
+      <div class="inventory-eyebrow">Store Inventory</div>
+      <h2 class="inventory-title">Inventory Control</h2>
+      <p class="inventory-sub">Welcome, <strong><%= user.username %></strong> <small>(<%= user.role %>)</small></p>
+    </div>
+    <div class="inventory-actions">
+      <a href="/addProduct" class="btn btn-primary btn-pill">Add Product</a>
+    </div>
   </div>
-</div>
-<p class="muted">Welcome, <strong><%= user.username %></strong> <small>(<%= user.role %>)</small></p>
-<form action="/inventory" method="get" class="row g-2 mb-3 align-items-end">
-  <div class="col-md-4">
-    <label class="form-label">Search</label>
-  <input type="text" name="q" class="form-control" value="<%= invSearch %>" placeholder="Name contains...">
+
+  <div class="inventory-stats">
+    <div class="inv-stat">
+      <div class="inv-stat-label">Total Products</div>
+      <div class="inv-stat-value"><%= totalProducts %></div>
+    </div>
+    <div class="inv-stat">
+      <div class="inv-stat-label">Featured</div>
+      <div class="inv-stat-value"><%= featuredTotal %></div>
+    </div>
+    <div class="inv-stat warn">
+      <div class="inv-stat-label">Low Stock (=5)</div>
+      <div class="inv-stat-value"><%= lowStockCount %></div>
+    </div>
   </div>
-  <div class="col-md-3">
-    <label class="form-label">Category</label>
-    <select name="category" class="form-select">
-      <option value="">All</option>
-  <option value="Produce" <%= (invCategory==='Produce')?'selected':'' %>>Fruits & Vegs</option>
-  <option value="Dairy" <%= invCategory==='Dairy'?'selected':'' %>>Dairy</option>
-  <option value="Bakery" <%= invCategory==='Bakery'?'selected':'' %>>Bakery</option>
-  <option value="Meats" <%= invCategory==='Meats'?'selected':'' %>>Meats</option>
-    </select>
-  </div>
-  <div class="col-md-2 form-check mt-4">
-  <input class="form-check-input" type="checkbox" name="featured" id="featuredOnly" value="1" <%= invFeaturedOnly ? 'checked' : '' %>>
-    <label class="form-check-label" for="featuredOnly">Featured only</label>
-  </div>
-  <div class="col-md-3 mt-4">
-    <button type="submit" class="btn btn-outline-primary">Filter</button>
-    <a href="/inventory" class="btn btn-link">Reset</a>
-  </div>
-</form>
-<% if (invSearch || invCategory || invFeaturedOnly) { %>
-  <div class="small mb-3">Active filters:
-  <% if (invSearch) { %><span class="badge bg-info text-dark">Search: <%= invSearch %></span> <% } %>
-  <% if (invCategory) { %><span class="badge bg-info text-dark">Category: <%= invCategory %></span> <% } %>
-  <% if (invFeaturedOnly) { %><span class="badge bg-info text-dark">Featured</span> <% } %>
-  </div>
-<% } %>
-<div class="table-responsive mt-3">
-  <table class="table table-clean text-center align-middle">
-    <thead>
-      <tr>
-        <th>Product</th>
-        <th>Image</th>
-        <th>Stock</th>
-        <th>Price</th>
-        <th>Category</th>
-        <th></th>
-        <th></th>
-      </tr>
-    </thead>
-    <tbody>
-      <% products.forEach(prod => { %>
+
+  <form action="/inventory" method="get" class="inventory-filter">
+    <div class="filter-field">
+      <label class="form-label">Search</label>
+      <input type="text" name="q" class="form-control" value="<%= invSearch %>" placeholder="Name contains...">
+    </div>
+    <div class="filter-field">
+      <label class="form-label">Category</label>
+      <select name="category" class="form-select">
+        <option value="">All</option>
+        <option value="Produce" <%= (invCategory==='Produce')?'selected':'' %>>Fruits & Vegs</option>
+        <option value="Dairy" <%= (invCategory==='Dairy')?'selected':'' %>>Dairy</option>
+        <option value="Bakery" <%= (invCategory==='Bakery')?'selected':'' %>>Bakery</option>
+        <option value="Meats" <%= (invCategory==='Meats')?'selected':'' %>>Meats</option>
+      </select>
+    </div>
+    <label class="filter-check">
+      <input class="form-check-input" type="checkbox" name="featured" value="1" <%= invFeaturedOnly ? 'checked' : '' %>>
+      Featured only
+    </label>
+    <div class="filter-actions">
+      <button type="submit" class="btn btn-outline-primary btn-pill">Filter</button>
+      <a href="/inventory" class="btn btn-link">Reset</a>
+    </div>
+  </form>
+
+  <% if (invSearch || invCategory || invFeaturedOnly) { %>
+    <div class="small mb-3">Active filters:
+      <% if (invSearch) { %><span class="badge bg-info text-dark">Search: <%= invSearch %></span> <% } %>
+      <% if (invCategory) { %><span class="badge bg-info text-dark">Category: <%= invCategory %></span> <% } %>
+      <% if (invFeaturedOnly) { %><span class="badge bg-info text-dark">Featured</span> <% } %>
+    </div>
+  <% } %>
+
+  <div class="table-responsive mt-3 inventory-table">
+    <table class="table text-center align-middle">
+      <thead>
         <tr>
-          <td class="text-start">
-            <a href="/product/<%= prod.id %>" class="text-decoration-none"><%= prod.productName %></a>
-            <% if (prod.featured) { %>
-              <span class="ms-1 feature-star" title="Featured">&#11088;</span>
-            <% } %>
-          </td>
-          <td style="width:120px"><img src="/images/<%= prod.image %>" alt="<%= prod.productName %>" class="img-fluid rounded" /></td>
-          <td><%= prod.quantity %></td>
-          <td>
-            <% 
-              const p = Number(prod.price);
-              const d = (prod.discount_price !== null && typeof prod.discount_price !== 'undefined') ? Number(prod.discount_price) : null;
-              const hasDiscount = (d !== null && !isNaN(d) && d < p);
-            %>
-            <% if (hasDiscount) { %>
-              <span class="price-discount">$<%= d.toFixed(2) %></span>
-              <span class="price-original ms-1">$<%= p.toFixed(2) %></span>
-            <% } else { %>
-              $<%= p.toFixed(2) %>
-            <% } %>
-          </td>
-          <td><span class="badge bg-secondary"><%= (['Produce','Fruits & Vegs','Fruits and Vegetables','Fruits & Vegetables'].includes(prod.category) ? 'Fruits & Vegs' : (prod.category || 'Uncategorized')) %></span></td>
-          <td>
-            <a href="/updateProduct/<%= prod.id %>" class="btn btn-edit btn-sm">Edit</a>
-            <form action="/product/<%= prod.id %>/<%= prod.featured ? 'unfeature' : 'feature' %>" method="POST" class="d-inline">
-              <button type="submit" class="btn btn-outline btn-sm ms-1"><%= prod.featured ? 'Unfeature' : 'Feature' %></button>
-            </form>
-          </td>
-          <td>
-            <a href="/deleteProduct/<%= prod.id %>" class="btn btn-delete btn-sm"
-               onclick="alert('Product cannot be deleted'); return false;">Delete</a>
-          </td>
+          <th class="text-start">Product</th>
+          <th>Image</th>
+          <th>Stock</th>
+          <th>Price</th>
+          <th>Category</th>
+          <th></th>
+          <th></th>
         </tr>
-      <% }) %>
-      <% if (products.length === 0) { %>
-        <tr><td colspan="7" class="text-center">No products found.</td></tr>
-      <% } %>
-    </tbody>
-  </table>
-</div>
+      </thead>
+      <tbody>
+        <% products.forEach(prod => { %>
+          <tr>
+            <td class="text-start">
+              <div class="prod-cell">
+                <div>
+                  <a href="/product/<%= prod.id %>" class="prod-name"><%= prod.productName %></a>
+                  <div class="prod-meta">ID <%= prod.id %></div>
+                </div>
+                <% if (prod.featured) { %>
+                  <span class="feature-pill" title="Featured">Featured</span>
+                <% } %>
+              </div>
+            </td>
+            <td style="width:120px"><img src="/images/<%= prod.image %>" alt="<%= prod.productName %>" class="img-fluid rounded prod-img" /></td>
+            <td>
+              <% const qty = Number(prod.quantity || 0); %>
+              <span class="stock-pill <%= qty <= 5 ? 'low' : '' %>"><%= qty %></span>
+            </td>
+            <td>
+              <% 
+                const p = Number(prod.price);
+                const d = (prod.discount_price !== null && typeof prod.discount_price !== 'undefined') ? Number(prod.discount_price) : null;
+                const hasDiscount = (d !== null && !isNaN(d) && d < p);
+              %>
+              <% if (hasDiscount) { %>
+                <span class="price-discount">$<%= d.toFixed(2) %></span>
+                <span class="price-original ms-1">$<%= p.toFixed(2) %></span>
+              <% } else { %>
+                $<%= p.toFixed(2) %>
+              <% } %>
+            </td>
+            <td><span class="category-pill"><%= (['Produce','Fruits & Vegs','Fruits and Vegetables','Fruits & Vegetables'].includes(prod.category) ? 'Fruits & Vegs' : (prod.category || 'Uncategorized')) %></span></td>
+            <td>
+              <div class="action-group">
+                <a href="/updateProduct/<%= prod.id %>" class="btn btn-outline-primary btn-sm btn-pill">Edit</a>
+                <form action="/product/<%= prod.id %>/<%= prod.featured ? 'unfeature' : 'feature' %>" method="POST" class="d-inline">
+                  <button type="submit" class="btn btn-outline-secondary btn-sm btn-pill"><%= prod.featured ? 'Unfeature' : 'Feature' %></button>
+                </form>
+              </div>
+            </td>
+            <td>
+              <a href="/deleteProduct/<%= prod.id %>" class="btn btn-outline-danger btn-sm btn-pill" onclick="alert('Product cannot be deleted'); return false;">Delete</a>
+            </td>
+          </tr>
+        <% }) %>
+        <% if (products.length === 0) { %>
+          <tr><td colspan="7" class="text-center">No products found.</td></tr>
+        <% } %>
+      </tbody>
+    </table>
+  </div>
+</section>
+
 <%- include('partials/footer') %>
+
+

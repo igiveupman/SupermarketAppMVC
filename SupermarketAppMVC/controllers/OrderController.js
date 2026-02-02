@@ -169,9 +169,25 @@ module.exports = {
       req.flash('error', 'Invalid order id.');
       return res.redirect('/orders');
     }
-    const reason = (req.body.reason || '').trim();
-    if (!reason || reason.length < 10) {
-      req.flash('error', 'Please provide a clear refund reason (min 10 characters).');
+    const reasonType = (req.body.reason_type || '').trim().toLowerCase();
+    const details = (req.body.reason || '').trim();
+    const allowedTypes = new Set([
+      'item_not_received',
+      'item_damaged',
+      'wrong_item',
+      'changed_mind',
+      'other'
+    ]);
+    if (!allowedTypes.has(reasonType)) {
+      req.flash('error', 'Please select a valid refund reason.');
+      return res.redirect('/orders#order-' + orderId);
+    }
+    if (reasonType === 'other' && details.length < 10) {
+      req.flash('error', 'Please provide details for "Other" (min 10 characters).');
+      return res.redirect('/orders#order-' + orderId);
+    }
+    if (details && details.length < 10) {
+      req.flash('error', 'Additional details must be at least 10 characters.');
       return res.redirect('/orders#order-' + orderId);
     }
     Order.getById(orderId, (err, order) => {
@@ -193,7 +209,8 @@ module.exports = {
       }
       Order.setRefundRequest(orderId, user.id, {
         refund_request_status: 'pending',
-        refund_request_reason: reason,
+        refund_request_reason: details || null,
+        refund_request_type: reasonType,
         refund_request_amount: Number(order.total || 0).toFixed(2),
         refund_requested_at: new Date()
       }, (uErr) => {

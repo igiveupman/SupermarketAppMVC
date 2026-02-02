@@ -1,77 +1,84 @@
 <% /* Shopping page header: includes FairPrice-inspired navbar */ %>
 <%- include('partials/header', { user, pageTitle: 'Shop', currentPage: 'shopping' }) %>
 <% const __trendingMode = (typeof trendingMode !== 'undefined') ? trendingMode : false; %>
-<div class="mb-2">Welcome, <strong><%= user.username %></strong> <small class="text-muted">(<%= user.role %>)</small></div>
-<h2 class="fw-semibold">Fresh Picks</h2>
-<p class="muted">Browse to your heart's content with our easy-to-use UI</p>
-<% if (__trendingMode) { %>
-  <h5 class="mt-1 text-primary">Showing trending (featured) products only.</h5>
-<% } %>
-<% /* Category widgets (chips). Clicking active one again clears its filter. */ %>
-<div class="action-widgets mb-3 category-widgets">
-  <% const categories = [
-    { key: '', label: 'All', iconSrc: '/images/logo.png', iconClass: 'icon-logo' },
-    { key: 'Bakery', label: 'Bakery', iconSrc: '/images/bread.png' },
-    { key: 'Dairy', label: 'Dairy', iconSrc: '/images/milk.png' },
-    { key: 'Produce', label: 'Fruits & Veg', iconSrc: '/images/broccoli.png' },
-    { key: 'Meats', label: 'Meats', iconSrc: '/images/beef.jpg' }
-  ]; %>
-  <% const buildQuery = (params) => {
-       const parts = [];
-       if (params.category) parts.push('category=' + encodeURIComponent(params.category));
-       if (params.search) parts.push('search=' + encodeURIComponent(params.search));
-       if (params.trending) parts.push('trending=1');
-       return parts.length ? '?' + parts.join('&') : '';
-     }; %>
-  <!-- Trending widget: toggles featured-only mode -->
-  <a class="widget <%= __trendingMode ? 'active' : '' %>" href="/shopping<%= __trendingMode ? buildQuery({ search, category }) : buildQuery({ trending: true, search, category }) %>" aria-label="Toggle trending products">
-    <div class="widget-icon">
-      <img class="widget-icon-img" src="/images/apples.png" alt="" aria-hidden="true">
+<% const currentSearch = typeof search !== 'undefined' ? search : ''; %>
+<% const currentCategory = typeof category !== 'undefined' ? category : ''; %>
+
+<section class="shop-shell">
+  <div class="shop-hero">
+    <div>
+      <div class="shop-eyebrow">Welcome, <strong><%= user.username %></strong> <small>(<%= user.role %>)</small></div>
+      <h2 class="shop-title">Fresh Picks, Daily</h2>
+      <p class="shop-sub">Discover essentials, seasonal finds, and member favourites in one clean aisle.</p>
     </div>
-    <div class="widget-body">
-      <h4>Trending</h4>
+    <div class="shop-hero-card">
+      <div class="hero-chip"><span>Today’s highlight</span> <strong>Seasonal savings</strong></div>
+      <div class="hero-note">Use vouchers for dairy and pantry staples.</div>
     </div>
-  </a>
-  <% categories.forEach(c => { %>
-  <a class="widget <%= (category === c.key || (!category && c.key === '')) ? 'active' : '' %>" href="/shopping<%= (category === c.key) ? buildQuery({ search, trending: __trendingMode }) : buildQuery({ category: c.key, search, trending: __trendingMode }) %>" aria-label="Filter by <%= c.label %>">
-      <div class="widget-icon">
-        <img class="widget-icon-img<%= c.iconClass ? ' ' + c.iconClass : '' %>" src="<%= c.iconSrc %>" alt="" aria-hidden="true">
-      </div>
-      <div class="widget-body">
-        <h4><%= c.label %></h4>
-      </div>
+  </div>
+
+  <% if (__trendingMode) { %>
+    <div class="trend-banner">Showing trending (featured) products only.</div>
+  <% } %>
+
+  <% /* Category chips */ %>
+  <div class="shop-categories">
+    <% const categories = [
+      { key: '', label: 'All', iconSrc: '/images/logo.png', iconClass: 'icon-logo' },
+      { key: 'Bakery', label: 'Bakery', iconSrc: '/images/bread.png' },
+      { key: 'Dairy', label: 'Dairy', iconSrc: '/images/milk.png' },
+      { key: 'Produce', label: 'Fruits & Veg', iconSrc: '/images/broccoli.png' },
+      { key: 'Meats', label: 'Meats', iconSrc: '/images/beef.jpg' }
+    ]; %>
+    <% const buildQuery = (params) => {
+         const parts = [];
+         if (params.category) parts.push('category=' + encodeURIComponent(params.category));
+         if (params.search) parts.push('search=' + encodeURIComponent(params.search));
+         if (params.trending) parts.push('trending=1');
+         return parts.length ? '?' + parts.join('&') : '';
+       }; %>
+    <a class="cat-pill <%= __trendingMode ? 'active' : '' %>" href="/shopping<%= __trendingMode ? buildQuery({ search: currentSearch, category: currentCategory }) : buildQuery({ trending: true, search: currentSearch, category: currentCategory }) %>">
+      <span class="cat-icon"><img src="/images/apples.png" alt="" aria-hidden="true"></span>
+      Trending
     </a>
-  <% }) %>
-</div>
-<% /* Filter bar: search, category dropdown, trending checkbox */ %>
-<form class="row g-3 align-items-center" method="GET" action="/shopping">
-  <div class="col-md-4 col-sm-12">
-    <input type="text" name="search" class="form-control" placeholder="Search products..." value="<%= typeof search !== 'undefined' ? search : '' %>">
+    <% categories.forEach(c => { %>
+      <a class="cat-pill <%= (currentCategory === c.key || (!currentCategory && c.key === '')) ? 'active' : '' %>" href="/shopping<%= (currentCategory === c.key) ? buildQuery({ search: currentSearch, trending: __trendingMode }) : buildQuery({ category: c.key, search: currentSearch, trending: __trendingMode }) %>">
+        <span class="cat-icon"><img src="<%= c.iconSrc %>" alt="" aria-hidden="true"></span>
+        <%= c.label %>
+      </a>
+    <% }) %>
   </div>
-  <div class="col-md-3 col-sm-6">
-    <select name="category" class="form-control">
-      <option value="">All Categories</option>
-      <option value="Bakery" <%= category === 'Bakery' ? 'selected' : '' %>>Bakery</option>
-      <option value="Dairy" <%= category === 'Dairy' ? 'selected' : '' %>>Dairy</option>
-      <option value="Fruits and Vegetables" <%= (category === 'Produce' || category === 'Fruits and Vegetables') ? 'selected' : '' %>>Fruits and Vegetables</option>
-      <option value="Meats" <%= category === 'Meats' ? 'selected' : '' %>>Meats</option>
-    </select>
-  </div>
-  <div class="col-md-3 col-sm-6">
-    <div class="form-check mt-1">
-      <input class="form-check-input" type="checkbox" name="trending" value="1" id="trendingCheck" <%= __trendingMode ? 'checked' : '' %> />
-      <label class="form-check-label" for="trendingCheck">Trending only</label>
+
+  <form class="shop-filter" method="GET" action="/shopping">
+    <div class="filter-field">
+      <label class="form-label">Search</label>
+      <input type="text" name="search" class="form-control" placeholder="Search products..." value="<%= currentSearch %>">
     </div>
-  </div>
-  <div class="col-md-2 col-sm-6">
-    <button type="submit" class="btn btn-primary w-100">Filter</button>
-  </div>
-</form>
-<% /* Product cards grid; shows a trending section when not in trendingMode */ %>
+    <div class="filter-field">
+      <label class="form-label">Category</label>
+      <select name="category" class="form-select">
+        <option value="">All Categories</option>
+        <option value="Bakery" <%= currentCategory === 'Bakery' ? 'selected' : '' %>>Bakery</option>
+        <option value="Dairy" <%= currentCategory === 'Dairy' ? 'selected' : '' %>>Dairy</option>
+        <option value="Fruits and Vegetables" <%= (currentCategory === 'Produce' || currentCategory === 'Fruits and Vegetables') ? 'selected' : '' %>>Fruits and Vegetables</option>
+        <option value="Meats" <%= currentCategory === 'Meats' ? 'selected' : '' %>>Meats</option>
+      </select>
+    </div>
+    <label class="filter-check">
+      <input class="form-check-input" type="checkbox" name="trending" value="1" <%= __trendingMode ? 'checked' : '' %> />
+      Trending only
+    </label>
+    <div class="filter-actions">
+      <button type="submit" class="btn btn-primary btn-pill">Filter</button>
+      <a href="/shopping" class="btn btn-link">Reset</a>
+    </div>
+  </form>
+</section>
+
 <div class="products-grid">
   <% if (!__trendingMode && typeof trendingProducts !== 'undefined' && trendingProducts.length) { %>
     <div style="grid-column:1/-1">
-      <h3 class="mt-4 mb-2"><img class="section-icon" src="/images/apples.png" alt="" aria-hidden="true">Trending Products</h3>
+      <div class="section-title"><span>Trending Products</span></div>
       <div class="products-grid trending-grid">
         <% trendingProducts.forEach(tp => { %>
           <%- include('partials/productCard', { p: tp, user, showFavorite: true, clickable: true, returnTo: '/shopping' }) %>
@@ -87,42 +94,41 @@
     <%- include('partials/productCard', { p, user, showFavorite: true, clickable: true, returnTo: '/shopping' }) %>
   <% }) %>
 </div>
+
 <% if (typeof totalPages !== 'undefined' && totalPages > 1) { %>
   <nav class="mt-4">
     <ul class="pagination">
       <li class="page-item <%= page === 1 ? 'disabled' : '' %>">
-        <a class="page-link" href="/shopping?page=<%= page - 1 %><%= search ? '&search=' + encodeURIComponent(search) : '' %><%= category ? '&category=' + encodeURIComponent(category) : '' %><%= __trendingMode ? '&trending=1' : '' %>" tabindex="-1">Previous</a>
+        <a class="page-link" href="/shopping?page=<%= page - 1 %><%= currentSearch ? '&search=' + encodeURIComponent(currentSearch) : '' %><%= currentCategory ? '&category=' + encodeURIComponent(currentCategory) : '' %><%= __trendingMode ? '&trending=1' : '' %>" tabindex="-1">Previous</a>
       </li>
       <% for (let i=1;i<= totalPages;i++){ %>
         <li class="page-item <%= page === i ? 'active' : '' %>">
-          <a class="page-link" href="/shopping?page=<%= i %><%= search ? '&search=' + encodeURIComponent(search) : '' %><%= category ? '&category=' + encodeURIComponent(category) : '' %><%= __trendingMode ? '&trending=1' : '' %>"><%= i %></a>
+          <a class="page-link" href="/shopping?page=<%= i %><%= currentSearch ? '&search=' + encodeURIComponent(currentSearch) : '' %><%= currentCategory ? '&category=' + encodeURIComponent(currentCategory) : '' %><%= __trendingMode ? '&trending=1' : '' %>"><%= i %></a>
         </li>
       <% } %>
       <li class="page-item <%= page === totalPages ? 'disabled' : '' %>">
-        <a class="page-link" href="/shopping?page=<%= page + 1 %><%= search ? '&search=' + encodeURIComponent(search) : '' %><%= category ? '&category=' + encodeURIComponent(category) : '' %><%= __trendingMode ? '&trending=1' : '' %>">Next</a>
+        <a class="page-link" href="/shopping?page=<%= page + 1 %><%= currentSearch ? '&search=' + encodeURIComponent(currentSearch) : '' %><%= currentCategory ? '&category=' + encodeURIComponent(currentCategory) : '' %><%= __trendingMode ? '&trending=1' : '' %>">Next</a>
       </li>
     </ul>
     <p class="text-muted small mt-2">Page <%= page %> of <%= totalPages %></p>
   </nav>
 <% } %>
+
 <%- include('partials/footer') %>
 <script src="/js/cartAjax.js"></script>
 <script>
   document.addEventListener('click', function(e){
     const card = e.target.closest('.product-card.clickable');
     if (!card) return;
-    // ignore if clicking interactive elements
     if (e.target.tagName === 'A' || e.target.tagName === 'BUTTON' || e.target.closest('form')) return;
     let link = card.getAttribute('data-link');
     if (link) {
-      // Strip accidental wrapping quotes ("/product/21" or '/product/21')
       if ((link.startsWith('"') && link.endsWith('"')) || (link.startsWith("'") && link.endsWith("'"))) {
         link = link.slice(1, -1);
       }
       window.location.assign(link);
     }
   });
-  // Client-side quantity validation for all qty inputs on shopping page
   document.addEventListener('input', function(e){
     if (e.target.matches('.qty-input')) {
       const maxAttr = e.target.getAttribute('data-max') || e.target.getAttribute('max');
@@ -161,15 +167,5 @@
     }
   });
 </script>
-<style>
-.favorite-toggle { text-decoration:none; }
-.heart { font-size:1.2rem; color:#cbd5e1; transition:.2s; }
-.heart.favorited { color:#e11d48; }
-.heart:hover { transform:scale(1.15); color:#e11d48; }
-.pagination .page-link { color:var(--color-primary); }
-.pagination .page-item.active .page-link { background:var(--color-primary); border-color:var(--color-primary); }
-.product-card.clickable { cursor:pointer; position:relative; }
-.product-card.clickable:hover { box-shadow:0 0 0 2px #004b9b26; }
-.qty-error { margin-top:4px; }
-.is-invalid { border-color:#dc2626; }
-</style>
+
+

@@ -14,6 +14,7 @@ module.exports = {
   // Creates a PaymentIntent for cart checkout.
   async createOrderIntent(req, res) {
     try {
+      // Snapshot cart + totals before redirecting to Stripe.
       const cart = req.session.cart || [];
       if (!cart.length) return res.status(400).json({ error: 'Cart is empty.' });
       // Amount is computed server-side to prevent tampering.
@@ -34,6 +35,7 @@ module.exports = {
       req.session.checkout_voucher = voucher ? { id: voucher.id, code: voucher.code, amount: Number(voucher.amount) } : null;
       req.session.checkout_total = pricing.total.toFixed(2);
       req.session.checkout_source = 'stripe';
+      // Stripe PI ties amount to the user and prevents tampering.
       const intent = await stripe.createPaymentIntent(pricing.total, {
         type: 'order',
         user_id: String(req.session.user.id || '')
@@ -47,6 +49,7 @@ module.exports = {
   // Creates a PayNow PaymentIntent for cart checkout.
   async createOrderPayNowIntent(req, res) {
     try {
+      // PayNow uses Stripe-hosted PI but is confirmed out-of-band.
       const cart = req.session.cart || [];
       if (!cart.length) return res.status(400).json({ error: 'Cart is empty.' });
       const voucher = await vouchers.resolveAppliedVoucher(req);
@@ -100,6 +103,7 @@ module.exports = {
   // Verifies Stripe result and completes the order.
   async completeOrder(req, res) {
     try {
+      // Verify PI success, then hand off to standard checkout.
       const paymentIntentId = req.body.payment_intent;
       const deliveryAddress = (req.body.delivery_address || '').trim();
       const deliveryContact = (req.body.delivery_contact || '').trim();
@@ -134,6 +138,7 @@ module.exports = {
       }
       req.session.checkout_address = deliveryAddress;
       req.session.checkout_contact = deliveryContact;
+      // Mark session as paid via Stripe; checkout() creates the order.
       req.session.payment_method = req.session.checkout_source === 'paynow' ? 'paynow' : 'stripe';
       req.session.payment_provider = 'stripe';
       req.session.payment_reference = paymentIntentId;

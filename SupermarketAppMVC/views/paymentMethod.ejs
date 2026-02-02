@@ -326,28 +326,63 @@
       }
       confirmBtn.disabled = true;
       try {
+        console.log('Creating Stripe payment intent...');
         const intentRes = await fetch('/api/stripe/order-intent', { method: 'post' });
         const intentData = await intentRes.json();
+        console.log('Intent response:', intentData);
         if (!intentData.clientSecret) {
           alert(intentData.message || intentData.error || 'Unable to start Stripe payment.');
           confirmBtn.disabled = false;
           return;
         }
-        const result = await stripeInstance.confirmCardPayment(intentData.clientSecret, {
-          payment_method: { card: stripeCard }
+        
+        // Create payment method from card element
+        console.log('Creating payment method from card element...');
+        const pmResult = await stripeInstance.createPaymentMethod({
+          type: 'card',
+          card: stripeCard,
+          billing_details: {
+            name: "<%= user && user.username ? user.username.replace(/\"/g, '') : 'Customer' %>",
+            email: "<%= user && user.email ? user.email.replace(/\"/g, '') : '' %>"
+          }
         });
+        
+        if (pmResult.error) {
+          console.error('Payment method creation error:', pmResult.error);
+          alert('Card validation failed: ' + pmResult.error.message);
+          confirmBtn.disabled = false;
+          return;
+        }
+        
+        const paymentMethodId = pmResult.paymentMethod.id;
+        console.log('Payment method created:', paymentMethodId);
+        console.log('Confirming card payment with paymentMethodId:', paymentMethodId);
+        
+        // Confirm the payment intent with the payment method
+        const result = await stripeInstance.confirmCardPayment(intentData.clientSecret, {
+          payment_method: paymentMethodId
+        });
+        
+        console.log('Payment result:', result);
         if (result.error) {
+          console.error('Stripe error:', result.error);
           alert(result.error.message || 'Stripe payment failed.');
           confirmBtn.disabled = false;
           return;
         }
         if (result.paymentIntent && result.paymentIntent.status === 'succeeded') {
+          console.log('Payment succeeded, payment intent ID:', result.paymentIntent.id);
           stripeIntentInput.value = result.paymentIntent.id;
           paymentForm.action = '/stripe/order/complete';
           paymentForm.submit();
+        } else {
+          console.log('Payment intent status is not succeeded:', result.paymentIntent?.status);
+          alert('Payment not completed. Status: ' + (result.paymentIntent?.status || 'unknown'));
+          confirmBtn.disabled = false;
         }
       } catch (err) {
-        alert('Stripe payment failed.');
+        console.error('Stripe payment error:', err);
+        alert('Stripe payment failed: ' + err.message);
         confirmBtn.disabled = false;
       }
     });

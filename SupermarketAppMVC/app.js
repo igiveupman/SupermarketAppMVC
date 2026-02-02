@@ -5,12 +5,21 @@ const envPath = path.join(__dirname, '.env');
 require('dotenv').config({ path: envPath }); // Load environment variables early
 const express = require('express');
 const axios = require('axios');
+const https = require('https');
+const dns = require('dns');
 const session = require('express-session');
 const flash = require('connect-flash');
 // Multer handles file uploads (used by admin to upload product images)
 const multer = require('multer');
 const app = express();
 // path already required above
+const NETS_API_BASE = process.env.NETS_API_BASE || 'https://sandbox.nets.openapipaas.com';
+const netsHttpsAgent = new https.Agent({
+    keepAlive: true,
+    lookup: (hostname, options, cb) => {
+        dns.lookup(hostname, { ...options, family: 4 }, cb);
+    }
+});
 
 // Configure Multer to store uploaded images in /public/images
 // Set up multer for file uploads (use absolute path so root launcher works)
@@ -223,6 +232,11 @@ connection.query('ALTER TABLE orders ADD COLUMN refund_request_reason TEXT NULL'
         console.error('Failed to ensure refund_request_reason column:', oErr.code);
     }
 });
+connection.query('ALTER TABLE orders ADD COLUMN refund_request_type VARCHAR(40) NULL', (oErr) => {
+    if (oErr && oErr.code !== 'ER_DUP_FIELDNAME') {
+        console.error('Failed to ensure refund_request_type column:', oErr.code);
+    }
+});
 connection.query('ALTER TABLE orders ADD COLUMN refund_request_amount DECIMAL(10,2) NULL', (oErr) => {
     if (oErr && oErr.code !== 'ER_DUP_FIELDNAME') {
         console.error('Failed to ensure refund_request_amount column:', oErr.code);
@@ -269,8 +283,10 @@ app.use(express.json());
 // Session middleware: stores user + cart data in server-side session
 //TO DO: Insert code for Session Middleware below 
 const isProd = process.env.NODE_ENV === 'production';
+// Use a dynamic secret to invalidate old sessions on each server restart
+const sessionSecret = isProd ? process.env.SESSION_SECRET : `dev_secret_${Date.now()}`;
 app.use(session({
-    secret: process.env.SESSION_SECRET || 'secret',
+    secret: sessionSecret,
     resave: false,
     saveUninitialized: false,
     // Session expires after 1 week of inactivity
@@ -319,6 +335,9 @@ const AuthController = require('./controllers/AuthController');
 // Simple in-memory rate limiter for login
 const loginAttempts = new Map();
 function loginRateLimit(req, res, next) {
+    if (!isProd) {
+        return next();
+    }
     const ip = req.ip || req.connection.remoteAddress || 'unknown';
     const now = Date.now();
     const windowMs = 15 * 60 * 1000;
@@ -331,10 +350,13 @@ function loginRateLimit(req, res, next) {
     entry.count += 1;
     loginAttempts.set(ip, entry);
     if (entry.count > maxAttempts) {
-        return res.status(429).send('Too many login attempts. Please try again later.');
+        req.flash('error', 'Too many login attempts. Please try again later.');
+        return res.redirect('/login');
     }
     next();
 }
+// Allow controllers to clear login attempts after a successful login
+app.locals.loginAttempts = loginAttempts;
 
 // Home page: shows landing or quick links; passes session user + flash messages
 app.get('/',  (req, res) => {
@@ -401,6 +423,7 @@ app.post('/purchase', checkAuthenticated, CartController.paymentProcess);
 // PayPal: Create Order (cart checkout)
 app.post('/api/paypal/create-order', checkAuthenticated, async (req, res) => {
     try {
+        // Snapshot cart + totals before redirecting to PayPal.
         const cart = req.session.cart || [];
         if (!cart.length) return res.status(400).json({ error: 'Cart is empty.' });
         const voucher = await vouchers.resolveAppliedVoucher(req);
@@ -436,6 +459,7 @@ app.post('/api/paypal/capture-order', checkAuthenticated, async (req, res) => {
         if (!delivery_address || !delivery_address.trim()) {
             return res.status(400).json({ error: 'Delivery address is required.' });
         }
+        // Capture on PayPal; verify captured amount against session total.
         const capture = await paypal.captureOrder(orderID);
         if (capture.status === 'COMPLETED') {
             const captureAmount = capture
@@ -490,11 +514,13 @@ app.get('/paynow/return', checkAuthenticated, (req, res) => {
 });
 // NETS QR callbacks (cart or subscription)
 app.get('/nets-qr/success', checkAuthenticated, (req, res) => {
+    // For subscriptions, NETS success completes subscription upgrade.
     if (req.session.subscription_payment_flow === 'nets') {
         req.session.subscription_payment_flow = null;
         req.session.subscription_nets_captured = true;
         return SubscriptionController.complete(req, res);
     }
+    // For cart orders, hand off to checkout() to create the order.
     req.session.payment_flow = 'nets';
     CartController.checkout(req, res);
 });
@@ -619,16 +645,18 @@ app.get('/sse/payment-status/:txnRetrievalRef', checkAuthenticated, async (req, 
 
     const interval = setInterval(async () => {
         pollCount += 1;
-        try {
+    try {
             const response = await axios.post(
-                'https://sandbox.nets.openapipaas.com/api/v1/common/payments/nets-qr/query',
+                `${NETS_API_BASE}/api/v1/common/payments/nets-qr/query`,
                 { txn_retrieval_ref: txnRetrievalRef, frontend_timeout_status: frontendTimeoutStatus },
                 {
                     headers: {
                         'api-key': process.env.NETS_API_KEY,
                         'project-id': process.env.NETS_PROJECT_ID,
                         'Content-Type': 'application/json'
-                    }
+                    },
+                    timeout: 30000,
+                    httpsAgent: netsHttpsAgent
                 }
             );
 
@@ -710,8 +738,7 @@ app.get('/debug/routes', (req, res) => {
 const PORT = process.env.PORT || 3000;
 // Start server only when this file is executed directly (not when required by root app.js)
 if (require.main === module) {
-    app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+    app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
 }
 
 module.exports = app;
-

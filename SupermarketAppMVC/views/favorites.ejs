@@ -20,9 +20,7 @@
 <% if (messages && messages.length) { %>
   <div class="toast-bottom" id="favToast"><span><%= messages.join(', ') %></span></div>
 <% } %>
-<style>
-.toast-bottom { position:fixed; left:50%; bottom:24px; transform:translateX(-50%); background:#0f172a; color:#fff; padding:10px 16px; border-radius:999px; box-shadow:0 12px 30px -12px rgba(15,23,42,.45); z-index:999; font-size:.9rem; }
-</style>
+
 <% if (messages && messages.length) { %>
 <script>
   setTimeout(() => {
@@ -31,3 +29,4 @@
   }, 2500);
 </script>
 <% } %>
+

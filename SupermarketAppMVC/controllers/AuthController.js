@@ -30,6 +30,10 @@ module.exports = {
         if (regenErr) return res.status(500).send('Session error');
         req.session.user = userRecord;
         req.flash('success', 'Login successful!');
+        const ip = req.ip || req.connection.remoteAddress || 'unknown';
+        if (req.app && req.app.locals && req.app.locals.loginAttempts) {
+          req.app.locals.loginAttempts.delete(ip);
+        }
         // Hydrate cart from DB so it persists across logouts
         CartController.loadCartForUser(req.session.user.id)
           .then(cart => { req.session.cart = cart; })

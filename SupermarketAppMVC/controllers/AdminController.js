@@ -8,6 +8,11 @@ async function executeRefund(order, amount) {
     if (value === 'succeeded' || value === 'completed') return 'refunded';
     return value || 'refunded';
   };
+  const assertRefundResponse = (provider, refund) => {
+    if (!refund || !refund.id || !refund.status) {
+      throw new Error(`${provider} refund did not return a valid confirmation. Please check provider logs.`);
+    }
+  };
   const stripe = require('../services/stripe');
   const paypal = require('../services/paypal');
   const provider = (order.payment_provider || order.delivery_method || '').toLowerCase();
@@ -16,6 +21,7 @@ async function executeRefund(order, amount) {
       throw new Error('Missing Stripe payment reference for this order.');
     }
     const refund = await stripe.createRefund(order.payment_reference, amount);
+    assertRefundResponse('Stripe', refund);
     return {
       status: normalizeStatus(refund && refund.status),
       reference: refund && refund.id ? refund.id : null
@@ -29,6 +35,7 @@ async function executeRefund(order, amount) {
     if (refund && refund.name) {
       throw new Error(refund.message || 'PayPal refund failed.');
     }
+    assertRefundResponse('PayPal', refund);
     return {
       status: normalizeStatus(refund && refund.status),
       reference: refund && refund.id ? refund.id : null
@@ -131,6 +138,22 @@ module.exports = {
                 itemsByOrder[r.order_id].push(r);
               });
             }
+            orders.forEach((o) => {
+              if (o.items_snapshot) {
+                try {
+                  const parsed = JSON.parse(o.items_snapshot);
+                  if (Array.isArray(parsed) && parsed.length) {
+                    itemsByOrder[o.id] = parsed.map((it) => ({
+                      order_id: o.id,
+                      product_id: it.productId,
+                      productName: it.productName,
+                      quantity: it.quantity,
+                      total_price: Number(it.lineTotal || (Number(it.unitPrice || 0) * Number(it.quantity || 0))) || 0
+                    }));
+                  }
+                } catch (e) {}
+              }
+            });
             res.render('adminUserOrders', { user: admin, subjectUser, orders, itemsByOrder, messages: req.flash('success'), errors: req.flash('error'), page: safePage, totalPages });
           });
         });
@@ -160,6 +183,131 @@ module.exports = {
         return res.render('adminRefundRequests', { user: admin, requests: [], messages: req.flash('success'), errors: req.flash('error') });
       }
       return res.render('adminRefundRequests', { user: admin, requests: rows || [], messages: req.flash('success'), errors: req.flash('error') });
+    });
+  },
+
+  // Search orders by payment reference/order id (admin)
+  orderSearch(req, res) {
+    const admin = req.session.user;
+    if (!admin || admin.role !== 'admin') {
+      req.flash('error', 'Unauthorized');
+      return res.redirect('/');
+    }
+    const term = (req.query.q || '').trim();
+    const userId = req.query.user_id ? parseInt(req.query.user_id, 10) : null;
+    const User = require('../models/User');
+    const db = require('../db');
+
+    User.getAll((uErr, users) => {
+      const userList = (users || []).filter(u => String(u.role || '').toLowerCase() !== 'admin');
+      if (!term && !userId) {
+        return res.render('adminOrderSearch', {
+          user: admin,
+          query: '',
+          userId: null,
+          users: userList,
+          orders: [],
+          itemsByOrder: {},
+          messages: req.flash('success'),
+          errors: req.flash('error')
+        });
+      }
+      const like = `%${term}%`;
+      const idTerm = Number.isFinite(Number(term)) ? Number(term) : -1;
+      const sql = `
+        SELECT o.*, u.username, u.email
+        FROM orders o
+        JOIN users u ON u.id = o.user_id
+        WHERE (
+          ? = ''
+          OR o.payment_reference LIKE ?
+          OR o.payment_order_id LIKE ?
+          OR o.id = ?
+        )
+        AND (
+          ? IS NULL
+          OR u.id = ?
+        )
+        ORDER BY o.created_at DESC
+        LIMIT 50
+      `;
+      db.query(sql, [term, like, like, idTerm, userId, userId], (err, rows) => {
+        if (err) {
+          console.error('Order search failed:', err);
+          req.flash('error', 'Failed to search orders.');
+          return res.render('adminOrderSearch', {
+            user: admin,
+            query: term,
+            userId,
+            users: userList,
+            orders: [],
+            itemsByOrder: {},
+            messages: req.flash('success'),
+            errors: req.flash('error')
+          });
+        }
+        const orders = rows || [];
+        if (!orders.length) {
+          return res.render('adminOrderSearch', {
+            user: admin,
+            query: term,
+            userId,
+            users: userList,
+            orders,
+            itemsByOrder: {},
+            messages: req.flash('success'),
+            errors: req.flash('error')
+          });
+        }
+        const ids = orders.map(o => o.id);
+        const itemsSql = `
+          SELECT oi.order_id,
+                 oi.product_id,
+                 SUM(oi.quantity) AS quantity,
+                 SUM(oi.price * oi.quantity) AS total_price,
+                 p.productName
+          FROM order_items oi
+          JOIN products p ON p.id = oi.product_id
+          WHERE oi.order_id IN (?)
+          GROUP BY oi.order_id, oi.product_id, p.productName
+          ORDER BY oi.order_id
+        `;
+        db.query(itemsSql, [ids], (iErr, items) => {
+          const itemsByOrder = {};
+          if (!iErr && items) {
+            items.forEach(r => {
+              if (!itemsByOrder[r.order_id]) itemsByOrder[r.order_id] = [];
+              itemsByOrder[r.order_id].push(r);
+            });
+          }
+          orders.forEach((o) => {
+            if (o.items_snapshot) {
+              try {
+                const parsed = JSON.parse(o.items_snapshot);
+                if (Array.isArray(parsed) && parsed.length) {
+                  itemsByOrder[o.id] = parsed.map((it) => ({
+                    order_id: o.id,
+                    product_id: it.productId,
+                    productName: it.productName,
+                    quantity: it.quantity,
+                    total_price: Number(it.lineTotal || (Number(it.unitPrice || 0) * Number(it.quantity || 0))) || 0
+                  }));
+                }
+              } catch (e) {}
+            }
+          });
+          return res.render('adminOrderSearch', {
+            user: admin,
+            query: term,
+            userId,
+            users: userList,
+            orders,
+            itemsByOrder,
+            messages: req.flash('success'),
+            errors: req.flash('error')
+          });
+        });
+      });
     });
   },
 

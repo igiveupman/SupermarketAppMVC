@@ -5,49 +5,75 @@
   - Provides quick links to edit user or view their order history
 */ %>
 <%- include('partials/header', { pageTitle: 'Manage Users', user, currentPage: 'adminUsers', messages, errors }) %>
-<section class="admin-form-wrapper">
+<section class="admin-form-wrapper users-scene">
   <div class="admin-panel users-panel">
-    <div class="auth-header">
-  <h1 class="auth-title">Users</h1>
-  <p class="auth-sub">Manage accounts and view order history</p>
+    <div class="users-hero">
+      <div>
+        <div class="users-eyebrow">Storefront Operations</div>
+        <h1 class="users-title">Customer Registry</h1>
+        <p class="users-sub">Quickly manage shoppers and view order trails.</p>
+      </div>
+      <% const totalUsers = (users || []).length; %>
+      <% const adminCount = (users || []).filter(u => u.role === 'admin').length; %>
+      <% const customerCount = totalUsers - adminCount; %>
+      <div class="users-stats">
+        <div class="stat-card">
+          <div class="stat-label">Total Accounts</div>
+          <div class="stat-value"><%= totalUsers %></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Customers</div>
+          <div class="stat-value"><%= customerCount %></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Admins</div>
+          <div class="stat-value"><%= adminCount %></div>
+        </div>
+      </div>
     </div>
-  <% /* Flash messages are rendered by the header include; avoid duplicating here. */ %>
-  <!-- Users table container (rounded, scrollable) -->
-  <div class="table-clean mb-4 users-table-wrapper">
+    <% /* Flash messages are rendered by the header include; avoid duplicating here. */ %>
+    <div class="users-table-wrapper">
       <table class="table table-sm mb-0 users-table">
         <thead>
-          <!-- Column headers: keep concise for small screens -->
           <tr>
-            <th>ID</th>
-            <th>Username</th>
-            <th>Email</th>
-            <th>Role</th>
+            <th>Member</th>
             <th>Contact</th>
-            <th>Actions</th>
+            <th>Role</th>
+            <th class="text-end">Actions</th>
           </tr>
         </thead>
         <tbody>
         <% if (users && users.length) { %>
           <% users.forEach(u => { %>
-            <!-- One table row per user -->
             <tr class="user-row">
-              <td><%= u.id %></td>
-              <td><%= u.username %></td>
-              <td><%= u.email %></td>
-              <!-- Role badge: red for admin, gray for user -->
-              <td><span class="badge bg-<%= u.role === 'admin' ? 'danger' : 'secondary' %>"><%= u.role %></span></td>
-              <td><%= u.contact || '-' %></td>
               <td>
-                <!-- Actions: admin users are protected (no buttons) -->
-                <div class="user-actions btn-group" role="group">
+                <div class="member-cell">
+                  <div class="member-avatar"><%= (u.username || 'U').charAt(0).toUpperCase() %></div>
+                  <div>
+                    <div class="member-name"><%= u.username %></div>
+                    <div class="member-meta">ID <%= u.id %> · <%= u.email %></div>
+                  </div>
+                </div>
+              </td>
+              <td>
+                <div class="member-contact"><%= u.contact || 'No contact' %></div>
+              </td>
+              <td>
+                <span class="role-pill <%= u.role === 'admin' ? 'role-admin' : 'role-user' %>"><%= u.role %></span>
+              </td>
+              <td>
+                <div class="user-actions" role="group">
                   <% if (u.role !== 'admin') { %>
-                    <!-- Edit profile (opens update form) -->
-                    <a href="/admin/users/<%= u.id %>/edit" class="btn btn-sm btn-outline-primary" title="Edit user"><span class="btn-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 17l4 3 12-12-4-4L4 17z"></path><path d="M14 5l4 4"></path></svg></span>Edit</a>
-                    <!-- View order history (admin view) -->
-                    <a href="/admin/users/<%= u.id %>/orders" class="btn btn-sm btn-outline-secondary" title="View order history"><span class="btn-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 3h10v18l-5-3-5 3V3z"></path><path d="M9 8h6"></path><path d="M9 12h6"></path></svg></span>Orders</a>
-                    <!-- Delete user (confirmation guard) -->
-                    <form action="/admin/users/<%= u.id %>/delete" method="POST" onsubmit="return confirm('Delete user <%= u.username %>?');" style="display:inline">
-                      <button class="btn btn-sm btn-outline-danger" type="submit" title="Delete user"><span class="btn-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 7h14"></path><path d="M9 7V5h6v2"></path><path d="M7 7l1 12h8l1-12"></path><path d="M10 11v6"></path><path d="M14 11v6"></path></svg></span>Delete</button>
+                    <a href="/admin/users/<%= u.id %>/edit" class="btn btn-sm btn-outline-primary" title="Edit user">
+                      <span class="btn-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 17l4 3 12-12-4-4L4 17z"></path><path d="M14 5l4 4"></path></svg></span>Edit
+                    </a>
+                    <a href="/admin/users/<%= u.id %>/orders" class="btn btn-sm btn-outline-secondary" title="View order history">
+                      <span class="btn-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 3h10v18l-5-3-5 3V3z"></path><path d="M9 8h6"></path><path d="M9 12h6"></path></svg></span>Orders
+                    </a>
+                    <form action="/admin/users/<%= u.id %>/delete" method="POST" onsubmit="return confirm('Delete user <%= u.username %>?');" class="inline-form">
+                      <button class="btn btn-sm btn-outline-danger" type="submit" title="Delete user">
+                        <span class="btn-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 7h14"></path><path d="M9 7V5h6v2"></path><path d="M7 7l1 12h8l1-12"></path><path d="M10 11v6"></path><path d="M14 11v6"></path></svg></span>Delete
+                      </button>
                     </form>
                   <% } else { %>
                     <span class="text-muted small">Protected admin</span>
@@ -57,7 +83,7 @@
             </tr>
           <% }) %>
         <% } else { %>
-          <tr><td colspan="6" class="text-center py-4">No users found.</td></tr>
+          <tr><td colspan="4" class="text-center py-4">No users found.</td></tr>
         <% } %>
         </tbody>
       </table>
@@ -65,22 +91,6 @@
   </div>
 </section>
 <!-- Local styles specific to Manage Users page; keep lightweight and scoped -->
-<style>
-  .users-panel { max-width: 980px; margin: 0 auto; }
-  .users-table-wrapper { border-radius: 14px; overflow: auto; box-shadow: 0 12px 28px rgba(15,23,42,0.08); background: linear-gradient(180deg, rgba(255,255,255,0.9), rgba(255,255,255,0.95)); }
-  .auth-header { text-align: center; margin-bottom: 12px; }
-  .auth-title { font-size: 34px; font-weight: 700; letter-spacing: 0.2px; }
-  .auth-sub { color: #667085; font-size: 0.95rem; }
-  .table-clean thead tr { background: #f4f6f9; }
-  .table-clean td, .table-clean th { padding: 10px 14px; }
-  .user-actions { gap: 8px; }
-  .user-actions .btn { min-width: 88px; border-radius: 10px; padding: 6px 10px; font-size: 0.78rem; letter-spacing: 0.3px; }
-  .user-actions .btn .btn-icon { width: 14px; height: 14px; margin-right: 0.35rem; }
-  .user-actions .btn .btn-icon svg { width: 14px; height: 14px; }
-  .badge { font-size: 0.75rem; padding: 0.35rem 0.6rem; border-radius: 999px; }
-  .badge.bg-danger { background-color: #ef4444 !important; }
-  .badge.bg-secondary { background-color: #64748b !important; }
-  /* Optional hover state for better affordance */
-  .users-table tbody tr.user-row:hover { background-color: #f7f9fc; }
-</style>
+
 <%- include('partials/footer') %>
+

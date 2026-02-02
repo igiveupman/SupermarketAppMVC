@@ -1,4 +1,12 @@
 // CartController: manages session-based cart and checkout
+// Payment Flow Overview:
+// 1) User selects payment method on /purchase (paymentForm).
+// 2) paymentProcess() routes to the chosen method:
+//    - Stripe/PayNow: create PaymentIntent via StripeController, then completeOrder() confirms payment.
+//    - PayPal: create order -> capture -> /paypal/complete -> checkout().
+//    - NETS: generate QR -> /nets-qr/success -> checkout().
+//    - PayNow (simulated): falls through to checkout() after form submit.
+// 3) checkout() recomputes totals server-side, creates the order + order_items snapshot, and clears cart.
 // Payment flow: method selection -> optional external capture -> checkout() for order creation
 const Product = require('../models/Product');
 const Order = require('../models/Order');
@@ -35,6 +43,7 @@ function adjustStock(productId, delta) {
 }
 
 function snapshotCart(cart) {
+  // Freeze cart state at the moment a payment flow starts (prevents later cart edits from changing totals).
   return (cart || []).map((item) => ({
     productId: item.productId,
     productName: item.productName,
@@ -47,6 +56,7 @@ function snapshotCart(cart) {
 }
 
 function snapshotVoucher(voucher) {
+  // Store only what checkout needs; avoid full voucher object in session.
   if (!voucher) return null;
   return {
     id: voucher.id,
@@ -54,6 +64,16 @@ function snapshotVoucher(voucher) {
     amount: Number(voucher.amount),
     discount_type: voucher.discount_type || 'fixed'
   };
+}
+
+function resetCheckoutSnapshot(req) {
+  // Clear any in-progress checkout state when cart/voucher changes.
+  if (!req || !req.session) return;
+  req.session.checkout_cart = null;
+  req.session.checkout_source = null;
+  req.session.checkout_voucher = null;
+  req.session.checkout_total = null;
+  req.session.payment_flow = null;
 }
 
 // Load cart items for a user from DB (used on login)
@@ -123,6 +143,7 @@ module.exports = {
   },
   // Render payment method selection (dummy methods: PayNow, NETS, GrabPay, card)
   async paymentForm(req, res) {
+    // Shows payment options page; totals are computed server-side for consistency.
     const cart = req.session.cart || [];
     if (!cart.length) { req.flash('error', 'Your cart is empty.'); return res.redirect('/cart'); }
     // Pricing is computed server-side to keep totals consistent across methods.
@@ -146,6 +167,7 @@ module.exports = {
 
     adjustStock(productId, -quantity)
       .then(({ product }) => {
+        resetCheckoutSnapshot(req);
         if (!req.session.cart) req.session.cart = [];
         const existing = req.session.cart.find(item => item.productId === productId);
         if (existing) {
@@ -186,6 +208,7 @@ module.exports = {
     }
     adjustStock(productId, -quantity)
       .then(({ product, newQty }) => {
+        resetCheckoutSnapshot(req);
         if (!req.session.cart) req.session.cart = [];
         const existing = req.session.cart.find(i => i.productId === productId);
         if (existing) {
@@ -224,6 +247,7 @@ module.exports = {
 
     adjustStock(productId, existing.quantity)
       .then(() => {
+        resetCheckoutSnapshot(req);
         req.session.cart = req.session.cart.filter(item => item.productId !== productId);
         deleteCartItem(req.session.user.id, productId).catch(()=>{});
         req.flash('success', 'Item removed from cart.');
@@ -258,6 +282,7 @@ module.exports = {
 
     adjustStock(productId, -delta)
       .then(() => {
+        resetCheckoutSnapshot(req);
         item.quantity = qty;
         setCartItem(req.session.user.id, productId, qty).catch(()=>{});
         req.flash('success', 'Quantity updated.');
@@ -280,6 +305,7 @@ module.exports = {
 
     Promise.all(cart.map(item => adjustStock(item.productId, item.quantity)))
       .then(() => {
+        resetCheckoutSnapshot(req);
         req.session.cart = [];
         clearCartDb(req.session.user.id).catch(()=>{});
         req.flash('success', 'Cart cleared and stock restored.');
@@ -297,6 +323,7 @@ module.exports = {
   // Checkout: verify stock, decrement product quantities, clear cart, and record order
   // Finalizes an order after payment is confirmed.
   checkout(req, res) {
+    // Finalizes the order after payment is confirmed (or for simulated methods).
     const hasSnapshot = !!req.session.checkout_cart && !!req.session.checkout_source;
     const cart = hasSnapshot ? (req.session.checkout_cart || []) : (req.session.cart || []);
     if (!cart.length) {
@@ -408,6 +435,7 @@ module.exports = {
           }
           }
         });
+        // Clear payment/session checkout state after order creation.
         req.session.payment_reference = null;
         req.session.payment_order_id = null;
         req.session.payment_provider = null;
@@ -416,7 +444,7 @@ module.exports = {
         req.session.checkout_voucher = null;
         req.session.checkout_total = null;
         req.session.checkout_source = null;
-        // success: log the checkout so it can be undone later
+        // Success log (admin undo) for stock restoration.
         try {
           const fs = require('fs');
           const path = require('path');
@@ -438,7 +466,7 @@ module.exports = {
           console.error('Failed to write checkout log:', e);
         }
 
-        // clear purchased items from cart and persist remaining items
+        // Clear purchased items from cart and persist remaining items (if any).
         const userId = req.session.user && req.session.user.id;
         if (hasSnapshot && userId) {
           const remainingMap = new Map();
@@ -466,8 +494,7 @@ module.exports = {
           req.session.cart = [];
           if (userId) clearCartDb(userId).catch(()=>{});
         }
-        // If coming from payment page or NETS flow, show success screen, else redirect
-        // Render success page for explicit payment flows; otherwise redirect to shopping.
+        // Render success screen for explicit payment flows; otherwise redirect to shopping.
         if (req.path === '/purchase' || req.session.payment_flow === 'nets' || req.session.payment_flow === 'paypal' || req.session.payment_flow === 'stripe') {
           req.session.payment_flow = null;
           const successMsg = 'Payment successful. Delivery to: ' + (req.session.checkout_address || 'N/A');
@@ -487,6 +514,7 @@ module.exports = {
   },
   // Validates method + delivery, then routes to the correct payment flow.
   paymentProcess(req, res) {
+  // Entry point for non-Stripe (server-side) payment flows.
   const { method, card_number, expiry, cvv, delivery_address, delivery_contact } = req.body; // removed card_name (simulation)
     const allowedMethods = new Set(['stripe', 'paynow', 'nets', 'paypal']);
     if (!method || !allowedMethods.has(method)) {
@@ -506,7 +534,7 @@ module.exports = {
       req.flash('error', 'Please provide a delivery address.');
       return res.redirect('/purchase');
     }
-    // Persist for use in checkout/order creation and success page
+    // Persist for use in checkout/order creation and success page.
     req.session.checkout_address = delivery_address.trim();
     req.session.checkout_contact = (delivery_contact || '').trim();
     req.session.payment_method = method;
@@ -514,7 +542,6 @@ module.exports = {
     req.session.payment_reference = null;
     req.session.payment_order_id = null;
 
-    // NETS QR uses a separate flow; generate QR and wait for success callback
     // NETS QR: external flow; success callback will call checkout().
     if (method === 'nets') {
       req.session.checkout_cart = snapshotCart(req.session.cart || []);
@@ -571,6 +598,7 @@ module.exports.applyVoucher = async function(req, res) {
     }
     req.session.applied_voucher = { id: voucher.id, code: voucher.code, amount: Number(voucher.amount), discount_type: voucherType };
     req.session.voucher_opt_out = false;
+    resetCheckoutSnapshot(req);
     const label = voucherType === 'percent' ? `${voucherValue}%` : `$${Number(voucher.amount).toFixed(2)}`;
     req.flash('success', `Voucher applied: ${voucher.code} (${label}) -$${discountAmount.toFixed(2)}`);
     return res.redirect(returnTo);
@@ -585,6 +613,7 @@ module.exports.removeVoucher = function(req, res) {
   const returnTo = req.body.returnTo && /^\/.+/.test(req.body.returnTo) ? req.body.returnTo : '/cart';
   req.session.applied_voucher = null;
   req.session.voucher_opt_out = true;
+  resetCheckoutSnapshot(req);
   req.flash('success', 'Voucher removed.');
   return res.redirect(returnTo);
 };

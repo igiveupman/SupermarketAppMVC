@@ -1,6 +1,10 @@
 const axios = require('axios');
+const https = require('https');
+const dns = require('dns');
 const { computeCartPricing } = require('./subscriptionPricing');
 const vouchers = require('./vouchers');
+
+const NETS_API_BASE = process.env.NETS_API_BASE || 'https://sandbox.nets.openapipaas.com';
 
 function getCourseInitId() {
   try {
@@ -12,6 +16,41 @@ function getCourseInitId() {
   }
 }
 
+function buildTxnId() {
+  const rand = Math.random().toString(36).slice(2, 8);
+  return `sandbox_nets|m|${Date.now()}_${rand}`;
+}
+
+const netsHttpsAgent = new https.Agent({
+  keepAlive: true,
+  lookup: (hostname, options, cb) => {
+    dns.lookup(hostname, { ...options, family: 4 }, cb);
+  }
+});
+
+async function postWithRetry(url, body, headers, attempts = 2) {
+  let lastErr;
+  for (let i = 0; i < attempts; i += 1) {
+    try {
+      return await axios.post(url, body, {
+        headers,
+        timeout: 30000,
+        httpsAgent: netsHttpsAgent
+      });
+    } catch (err) {
+      lastErr = err;
+      const status = err.response && err.response.status ? err.response.status : null;
+      const isTimeout = err.code === 'ECONNABORTED';
+      const retryable = isTimeout || (status && status >= 500);
+      if (!retryable || i === attempts - 1) {
+        throw err;
+      }
+      await new Promise((resolve) => setTimeout(resolve, 800));
+    }
+  }
+  throw lastErr;
+}
+
 // NETS QR for cart checkout (amount from cart total).
 exports.generateQrCode = async (req, res) => {
   const cart = req.session.cart || [];
@@ -19,6 +58,13 @@ exports.generateQrCode = async (req, res) => {
     req.flash('error', 'Your cart is empty.');
     return res.redirect('/cart');
   }
+  // Total is computed server-side to prevent client tampering.
+  const voucher = await vouchers.resolveAppliedVoucher(req);
+  const pricing = computeCartPricing(cart, req.session.user, voucher);
+  if (pricing.voucherRejected) {
+    req.session.applied_voucher = null;
+  }
+  const cartTotal = pricing.total.toFixed(2);
   if (!process.env.NETS_API_KEY || !process.env.NETS_PROJECT_ID) {
     return res.render('netsQrFail', {
       user: req.session.user,
@@ -28,28 +74,21 @@ exports.generateQrCode = async (req, res) => {
       errorMsg: 'NETS configuration is missing. Set NETS_API_KEY and NETS_PROJECT_ID.'
     });
   }
-
-  const voucher = await vouchers.resolveAppliedVoucher(req);
-  const pricing = computeCartPricing(cart, req.session.user, voucher);
-  if (pricing.voucherRejected) {
-    req.session.applied_voucher = null;
-  }
-  const cartTotal = pricing.total.toFixed(2);
   try {
     const requestBody = {
-      txn_id: 'sandbox_nets|m|8ff8e5b6-d43e-4786-8ac5-7accf8c5bd9b',
+      txn_id: buildTxnId(),
       amt_in_dollars: cartTotal,
       notify_mobile: 0
     };
 
-    const response = await axios.post(
-      'https://sandbox.nets.openapipaas.com/api/v1/common/payments/nets-qr/request',
+    // NETS QR request (sandbox).
+    const response = await postWithRetry(
+      `${NETS_API_BASE}/api/v1/common/payments/nets-qr/request`,
       requestBody,
       {
-        headers: {
-          'api-key': process.env.NETS_API_KEY,
-          'project-id': process.env.NETS_PROJECT_ID
-        }
+        'api-key': process.env.NETS_API_KEY,
+        'project-id': process.env.NETS_PROJECT_ID,
+        'Content-Type': 'application/json'
       }
     );
 
@@ -61,6 +100,7 @@ exports.generateQrCode = async (req, res) => {
       qrData.qr_code
     ) {
       const txnRetrievalRef = qrData.txn_retrieval_ref;
+      // Store NETS transaction reference for later status polling.
       if (req && req.session) {
         req.session.payment_provider = 'nets';
         req.session.payment_reference = txnRetrievalRef;
@@ -92,7 +132,9 @@ exports.generateQrCode = async (req, res) => {
       errorMsg
     });
   } catch (error) {
-    console.error('NETS QR request failed:', error.message);
+    const status = error.response && error.response.status ? error.response.status : null;
+    const details = error.response && error.response.data ? JSON.stringify(error.response.data) : '';
+    console.error('NETS QR request failed:', status ? `${status} ${error.message}` : error.message, details);
     return res.render('netsQrFail', {
       user: req.session.user,
       pageTitle: 'NETS QR Failed',
@@ -120,19 +162,19 @@ exports.generateQrCodeForAmount = async (req, res, amount) => {
   const totalAmount = Number(amount || 0).toFixed(2);
   try {
     const requestBody = {
-      txn_id: 'sandbox_nets|m|8ff8e5b6-d43e-4786-8ac5-7accf8c5bd9b',
+      txn_id: buildTxnId(),
       amt_in_dollars: totalAmount,
       notify_mobile: 0
     };
 
-    const response = await axios.post(
-      'https://sandbox.nets.openapipaas.com/api/v1/common/payments/nets-qr/request',
+    // Subscription uses a fixed amount, but same NETS QR request.
+    const response = await postWithRetry(
+      `${NETS_API_BASE}/api/v1/common/payments/nets-qr/request`,
       requestBody,
       {
-        headers: {
-          'api-key': process.env.NETS_API_KEY,
-          'project-id': process.env.NETS_PROJECT_ID
-        }
+        'api-key': process.env.NETS_API_KEY,
+        'project-id': process.env.NETS_PROJECT_ID,
+        'Content-Type': 'application/json'
       }
     );
 
@@ -175,7 +217,9 @@ exports.generateQrCodeForAmount = async (req, res, amount) => {
       errorMsg
     });
   } catch (error) {
-    console.error('NETS QR request failed:', error.message);
+    const status = error.response && error.response.status ? error.response.status : null;
+    const details = error.response && error.response.data ? JSON.stringify(error.response.data) : '';
+    console.error('NETS QR request failed:', status ? `${status} ${error.message}` : error.message, details);
     return res.render('netsQrFail', {
       user: req.session.user,
       pageTitle: 'NETS QR Failed',
