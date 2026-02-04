@@ -990,6 +990,7 @@ select {
   .order-chip-row { display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; }
   .order-chip { background:#f8fafc; border:1px solid #e2e8f0; color:#475569; padding:4px 10px; border-radius:999px; font-size:.78rem; font-weight:600; }
   .order-chip.success { background:#ecfdf5; border-color:#a7f3d0; color:#047857; }
+  .order-chip.danger { background:#fee2e2; border-color:#fecaca; color:#b91c1c; }
   .order-subtotal { margin-top:8px; color:#64748b; font-size:.9rem; }
   .order-actions { margin-top:10px; }
   .order-divider { margin:16px 0; }\n\n/* Source: SupermarketAppMVC/views/partials/productCard.ejs */\n.product-card img { object-fit: cover; width: 100%; max-height: 180px; border-radius: 8px; margin: 0.25rem 0 0.5rem; }

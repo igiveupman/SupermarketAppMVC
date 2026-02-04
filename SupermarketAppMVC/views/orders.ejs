@@ -42,6 +42,9 @@
         <% if (savingsAmount > 0) { %>
           <span class="order-chip success">Saved $<%= savingsAmount.toFixed(2) %></span>
         <% } %>
+        <% if (reqStatus === 'denied') { %>
+          <span class="order-chip danger">Refund denied</span>
+        <% } %>
       </div>
       <div class="order-subtotal">Items $<%= itemSubtotal.toFixed(2) %></div>
       <div class="order-actions">
@@ -75,7 +78,10 @@
             <div class="small text-muted">Reason type: <%= refundTypeLabel %></div>
           <% } %>
         <% } else if (reqStatus === 'denied') { %>
-          <div class="small text-danger">Refund request rejected.</div>
+          <div class="small text-danger fw-semibold">Refund request rejected.</div>
+          <% if (o.refund_decision_at) { %>
+            <div class="small text-muted">Decision made on: <%= new Date(o.refund_decision_at).toLocaleString() %></div>
+          <% } %>
           <% if (refundTypeLabel) { %>
             <div class="small text-muted">Reason type: <%= refundTypeLabel %></div>
           <% } %>

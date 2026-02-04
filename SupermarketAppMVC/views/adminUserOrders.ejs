@@ -64,6 +64,8 @@
                 <span class="badge bg-success ms-2">Refunded</span>
               <% } else if (reqStatus === 'pending') { %>
                 <span class="badge bg-warning text-dark ms-2">Refund Requested</span>
+              <% } else if (reqStatus === 'denied') { %>
+                <span class="badge bg-danger ms-2">Refund Denied</span>
               <% } %>
             </div>
             <% if (o.refund_status) { %>
@@ -89,6 +91,17 @@
                   <button class="btn btn-sm btn-outline-danger" type="submit">Deny</button>
                 </form>
               </div>
+            <% } else if (reqStatus === 'denied') { %>
+              <% if (refundTypeLabel) { %>
+                <div class="w-100 small text-muted mt-2">Request type: <%= refundTypeLabel %></div>
+              <% } %>
+              <div class="w-100 small text-muted mt-1">Denied reason: <%= o.refund_request_reason || 'No reason provided' %></div>
+              <% if (o.refund_request_note) { %>
+                <div class="w-100 small text-muted mt-1">Admin note: <%= o.refund_request_note %></div>
+              <% } %>
+              <% if (o.refund_decision_at) { %>
+                <div class="w-100 small text-muted mt-1">Decision date: <%= new Date(o.refund_decision_at).toLocaleString() %></div>
+              <% } %>
             <% } else if (provider === 'stripe' || provider === 'paypal') { %>
               <form action="/admin/orders/<%= o.id %>/refund" method="post" class="d-flex align-items-center gap-2" onsubmit="return confirm('Refund this order?');">
                 <input class="form-control form-control-sm" type="number" name="amount" step="0.01" min="0.01" max="<%= Number(o.total).toFixed(2) %>" value="<%= Number(o.total).toFixed(2) %>" style="max-width:120px;" />
