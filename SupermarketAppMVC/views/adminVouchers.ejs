@@ -1,23 +1,28 @@
 <%- include('partials/header', { user, pageTitle: 'Vouchers', currentPage: 'adminDashboard', messages: (typeof messages !== 'undefined' ? messages : []), errors: (typeof errors !== 'undefined' ? errors : []) }) %>
-<div class="container-wide">
-  <div class="admin-orders-header">
-    <div class="admin-orders-title">
+<div class="container-wide admin-vouchers-shell">
+  <div class="admin-vouchers-header">
+    <div>
       <div class="eyebrow">Vouchers</div>
       <h2>Create & Manage</h2>
-      <div class="subline">Issue fixed-amount or percentage vouchers for cart discounts.</div>
+      <p class="muted">Issue fixed-amount, percentage, or event-specific vouchers for upcoming promotions.</p>
     </div>
-    <div class="admin-orders-actions">
-      <a class="btn btn-outline" href="/admin"><span class="btn-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M14 6l-6 6 6 6"></path></svg></span>Back to Dashboard</a>
-    </div>
+    <a class="btn btn-outline btn-sm" href="/admin">
+      <span class="btn-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M14 6l-6 6 6 6"></path></svg></span>
+      Back to Dashboard
+    </a>
   </div>
 
-  <div class="voucher-grid">
+  <div class="admin-vouchers-grid">
     <form class="voucher-card" action="/admin/vouchers" method="post">
       <h4>Create Voucher</h4>
       <div class="row g-3">
         <div class="col-md-6">
           <label class="form-label">Code (optional)</label>
           <input class="form-control" type="text" name="code" placeholder="AUTO-GENERATE" />
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Voucher Name (optional)</label>
+          <input class="form-control" type="text" name="name" placeholder="e.g. Christmas 2025" maxlength="100" />
         </div>
         <div class="col-md-3">
           <label class="form-label">Discount Type</label>
@@ -46,7 +51,7 @@
       <button class="btn btn-primary mt-3" type="submit">Create Voucher</button>
     </form>
 
-    <div class="voucher-card">
+    <div class="voucher-card voucher-list-card">
       <h4>Recent Vouchers</h4>
       <% if (!vouchers.length) { %>
         <div class="alert alert-info mt-2">No vouchers created yet.</div>
@@ -56,6 +61,7 @@
             <thead>
               <tr>
                 <th>Code</th>
+                <th>Name</th>
                 <th>Amount</th>
                 <th>Type</th>
                 <th>User</th>
@@ -67,8 +73,9 @@
             </thead>
             <tbody>
               <% vouchers.forEach(v => { %>
-                <tr>
-                  <td><strong><%= v.code %></strong></td>
+              <tr>
+                <td><strong><%= v.code %></strong></td>
+                <td><%= v.name || '-' %></td>
                   <td>
                     <% const isPercent = String(v.discount_type || 'fixed').toLowerCase() === 'percent'; %>
                     <%= isPercent ? (Number(v.amount).toFixed(0) + '%') : ('$' + Number(v.amount).toFixed(2)) %>

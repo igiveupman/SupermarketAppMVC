@@ -7,6 +7,7 @@ const Order = require('../models/Order');
 const db = require('../db');
 const { BASE_DELIVERY_FEE } = require('../services/subscriptionPricing');
 const GST_RATE = 0.10;
+const REFUNDABLE_PAYMENT_PROVIDERS = new Set(['stripe', 'paypal', 'paynow']);
 
 function safeParseSnapshot(raw) {
   if (!raw) return null;
@@ -194,6 +195,11 @@ module.exports = {
       if (err || !order || order.user_id !== user.id) {
         req.flash('error', 'Order not found.');
         return res.redirect('/orders');
+      }
+      const provider = (order.payment_provider || '').toLowerCase();
+      if (!REFUNDABLE_PAYMENT_PROVIDERS.has(provider)) {
+        req.flash('error', 'Refunds are only supported for Stripe or PayPal payments.');
+        return res.redirect('/orders#order-' + orderId);
       }
       if (order.refund_status) {
         req.flash('error', 'This order has already been refunded.');

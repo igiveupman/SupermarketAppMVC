@@ -39,14 +39,14 @@
     </div>
   </div>
   <div id="stripeSection" class="border rounded p-3 mb-3 wallet-section" data-method="stripe" style="background:#fff;">
-    <div class="mb-2 fw-semibold">Card Details</div>
-    <div id="stripe-card-element" class="border rounded p-2 bg-white"></div>
-    <div class="small text-muted mt-2">Payments are processed securely by Stripe.</div>
+    <div class="mb-2 fw-semibold">Pay with Stripe Checkout</div>
+    <p class="small text-muted mb-2">You will be redirected to Stripe’s hosted checkout where you can safely enter your card information.</p>
+    <div class="small text-muted">Stripe handles all card details and keeps you within a secure flow.</div>
   </div>
   <div id="paynowSection" class="border rounded p-3 mb-3 wallet-section" data-method="paynow" style="display:none; background:#fff;">
     <p class="mb-2 fw-semibold">PayNow QR payment (Stripe)</p>
     <div class="small text-muted mb-2">Generate a QR code and scan it with your bank app to pay.</div>
-    <button type="button" class="btn btn-outline btn-sm" id="subPaynowStartBtn">Generate PayNow QR</button>
+    <button type="button" class="btn btn-outline btn-sm" id="subPaynowStartBtn">Confirm Payment</button>
     <div class="mt-3 d-none" id="subPaynowQrWrap">
       <img id="subPaynowQrImage" alt="PayNow QR Code" style="max-width:220px; width:100%; border:1px solid #e2e8f0; border-radius:12px; padding:10px; background:#f8fafc;" />
       <div class="small text-muted mt-2">Or open the instructions: <a href="#" target="_blank" rel="noreferrer" id="subPaynowQrLink">PayNow instructions</a></div>
@@ -86,15 +86,11 @@
     const stripeKey = "<%= process.env.STRIPE_PUBLISHABLE_KEY || '' %>";
     const stripeIntentInput = document.getElementById('stripePaymentIntent');
     const paymentForm = document.getElementById('subscriptionPaymentForm');
-    let stripeInstance;
-    let stripeCard;
+    let stripeInstance = null;
     let paypalRendered = false;
 
     if (stripeKey) {
       stripeInstance = Stripe(stripeKey);
-      const elements = stripeInstance.elements();
-      stripeCard = elements.create('card', { hidePostalCode: true });
-      stripeCard.mount('#stripe-card-element');
     } else {
       stripeRadio.disabled = true;
       stripeRadio.checked = false;
@@ -164,6 +160,7 @@
     paypalRadio.addEventListener('change', sync);
     sync();
 
+    // Polls PayNow intent until NETS confirms or the QR expires, then finalizes subscription.
     async function pollSubPaynowStatus(intentId) {
       stopSubPaynowPoll();
       subPaynowPoll = setInterval(async () => {
@@ -189,12 +186,14 @@
       }, 3000);
     }
 
+    // Triggering PayNow for subscriptions uses the same confirm/paynow flow as cart payments.
     if (subPaynowStartBtn) {
       subPaynowStartBtn.addEventListener('click', async () => {
         subPaynowStartBtn.disabled = true;
         subPaynowStatus.textContent = 'Generating PayNow QR code...';
         subPaynowQrWrap.classList.add('d-none');
         try {
+          // 1. Create a PayNow intent tied to the subscription tier.
           const res = await fetch('/api/stripe/subscription-paynow-intent', { method: 'post' });
           let data = null;
           try {
@@ -213,6 +212,7 @@
             return;
           }
           const returnUrl = window.location.origin + '/paynow/return';
+          // 2. Confirm PayNow with Stripe, allow it to render the QR or redirect actions.
           const confirmResult = await stripeInstance.confirmPayNowPayment(data.clientSecret, {
             payment_method: {
               billing_details: {
@@ -238,6 +238,7 @@
           const nextAction = pi && pi.next_action ? pi.next_action : null;
           const qr = nextAction && (nextAction.paynow_display_qr_code || nextAction.display_qr_code) ? (nextAction.paynow_display_qr_code || nextAction.display_qr_code) : null;
           if (qr && qr.image_url) {
+            // 3. Show QR + instructions; start polling intent status until Stripe marks it succeeded.
             subPaynowQrImage.src = qr.image_url;
             subPaynowQrLink.href = qr.hosted_instructions_url || '#';
             subPaynowQrWrap.classList.remove('d-none');
@@ -265,39 +266,38 @@
       });
     }
 
-    // Stripe card flow: create PaymentIntent -> confirm -> submit to server for verification.
+    // Stripe checkout flow: create session and redirect.
     paymentForm.addEventListener('submit', async (event) => {
       const useStripe = stripeRadio.checked;
       if (!useStripe) return;
       event.preventDefault();
-      if (!stripeInstance || !stripeCard) {
+      if (!stripeInstance) {
         alert('Stripe is not configured.');
         return;
       }
       confirmBtn.disabled = true;
       try {
-        const intentRes = await fetch('/api/stripe/subscription-intent', { method: 'post' });
-        const intentData = await intentRes.json();
-        if (!intentData.clientSecret) {
-          alert(intentData.message || intentData.error || 'Unable to start Stripe payment.');
-          confirmBtn.disabled = false;
-          return;
-        }
-        const result = await stripeInstance.confirmCardPayment(intentData.clientSecret, {
-          payment_method: { card: stripeCard }
+        const res = await fetch('/api/stripe/subscription-checkout-session', {
+          method: 'post'
         });
-        if (result.error) {
-          alert(result.error.message || 'Stripe payment failed.');
+        let data = null;
+        try {
+          data = await res.json();
+        } catch (e) {
+          data = { error: await res.text() };
+        }
+        if (!res.ok || !data.sessionId) {
+          alert(data.message || data.error || `Unable to start Stripe checkout (HTTP ${res.status}).`);
           confirmBtn.disabled = false;
           return;
         }
-        if (result.paymentIntent && result.paymentIntent.status === 'succeeded') {
-          stripeIntentInput.value = result.paymentIntent.id;
-          paymentForm.action = '/stripe/subscription/complete';
-          paymentForm.submit();
+        const redirectResult = await stripeInstance.redirectToCheckout({ sessionId: data.sessionId });
+        if (redirectResult.error) {
+          alert(redirectResult.error.message || 'Stripe checkout failed.');
+          confirmBtn.disabled = false;
         }
       } catch (err) {
-        alert('Stripe payment failed.');
+        alert('Stripe checkout failed: ' + (err.message || 'unknown error'));
         confirmBtn.disabled = false;
       }
     });

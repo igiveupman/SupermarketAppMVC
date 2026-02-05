@@ -28,6 +28,40 @@ async function createPaymentIntent(amount, metadata) {
   });
 }
 
+async function createCheckoutSession(amount, metadata, successUrl, cancelUrl) {
+  const client = getClient();
+  if (!client) throw new Error('Stripe secret key is missing.');
+  return client.checkout.sessions.create({
+    mode: 'payment',
+    payment_method_types: ['card'],
+    line_items: [
+      {
+        price_data: {
+          currency: 'sgd',
+          product_data: {
+            name: 'UnfairPrice order',
+            description: 'Items from cart checkout'
+          },
+          unit_amount: toMinorUnits(amount)
+        },
+        quantity: 1
+      }
+    ],
+    success_url: successUrl,
+    cancel_url: cancelUrl,
+    metadata: metadata || {},
+    payment_intent_data: {
+      metadata: metadata || {}
+    }
+  });
+}
+
+async function retrieveCheckoutSession(sessionId) {
+  const client = getClient();
+  if (!client) throw new Error('Stripe secret key is missing.');
+  return client.checkout.sessions.retrieve(sessionId);
+}
+
 // Confirm a PaymentIntent with card payment method.
 async function confirmPaymentIntent(paymentIntentId, paymentMethodId) {
   const client = getClient();
@@ -70,9 +104,11 @@ async function createRefund(paymentIntentId, amount) {
 
 module.exports = {
   createPaymentIntent,
+  createCheckoutSession,
   confirmPaymentIntent,
   createPayNowIntent,
   retrievePaymentIntent,
+  retrieveCheckoutSession,
   createRefund,
   toMinorUnits
 };

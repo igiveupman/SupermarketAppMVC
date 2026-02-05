@@ -543,6 +543,7 @@ module.exports = {
     req.session.payment_order_id = null;
 
     // NETS QR: external flow; success callback will call checkout().
+    // We snapshot the cart, voucher, and total so the NETS QR page can poll the status with a consistent payload.
     if (method === 'nets') {
       req.session.checkout_cart = snapshotCart(req.session.cart || []);
       req.session.checkout_voucher = snapshotVoucher(req.session.applied_voucher);

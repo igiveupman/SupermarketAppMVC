@@ -337,6 +337,7 @@ module.exports = {
     }
     const vouchers = require('../services/vouchers');
     const code = (req.body.code || '').trim().toUpperCase();
+    const name = (req.body.name || '').trim() || null;
     const amount = Number(req.body.amount);
     const discountType = (req.body.discount_type || 'fixed').toLowerCase();
     const expiresIn = Number(req.body.expires_in_days || 30);
@@ -354,8 +355,9 @@ module.exports = {
     const days = Number.isFinite(expiresIn) && expiresIn > 0 ? expiresIn : 30;
     const expiresAt = new Date(Date.now() + days * 24 * 60 * 60 * 1000);
     try {
-      const voucher = await vouchers.createVoucher({
+    const voucher = await vouchers.createVoucher({
         code: code || undefined,
+        name,
         amount,
         discountType,
         expiresAt,
@@ -366,7 +368,8 @@ module.exports = {
       const label = String(voucher.discount_type || 'fixed').toLowerCase() === 'percent'
         ? `${Number(voucher.amount).toFixed(0)}%`
         : `$${Number(voucher.amount).toFixed(2)}`;
-      req.flash('success', `Voucher created: ${voucher.code} (${label})`);
+      const nameLabel = voucher.name ? `${voucher.name} - ` : '';
+      req.flash('success', `Voucher created: ${nameLabel}${voucher.code} (${label})`);
       return res.redirect('/admin/vouchers');
     } catch (err) {
       console.error('Failed to create voucher:', err);

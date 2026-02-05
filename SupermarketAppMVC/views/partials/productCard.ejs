@@ -1,6 +1,13 @@
 <% /* Reusable product card partial. Expects locals: p (product), user, returnTo (optional), showFavorite (bool), clickable (bool) */ %>
+<% const isFlash = p.discount_price && Number(p.discount_price) < Number(p.price); %>
 <div class="product-card <%= clickable ? 'clickable' : '' %>" <%= clickable ? ('data-link="/product/' + p.id + '"') : '' %>>
-  <div class="d-flex justify-content-between align-items-start mb-1">
+  <% if (isFlash) { %>
+    <div class="product-card-flag">
+      <span class="flash-badge">Flash Deal</span>
+      <span class="flash-save">Save $<%= (Number(p.price) - Number(p.discount_price)).toFixed(2) %></span>
+    </div>
+  <% } %>
+  <div class="d-flex justify-content-between align-items-start mb-1 product-card-top">
     <div class="product-meta"><%= (p.category === 'Produce' || p.category === 'Fruits and Vegetables') ? 'Fruits & Veg' : (p.category || 'Uncategorized') %></div>
     <% if (showFavorite && user) { %>
       <a href="/favorites/toggle/<%= p.id %>" class="favorite-toggle" title="Toggle favorite" onclick="event.stopPropagation()">
@@ -26,7 +33,9 @@
       <small class="text-muted"><%= (p.reviewCount || 0) %></small>
     </div>
   <% } %>
-  <img src="/images/<%= p.image %>" alt="<%= p.productName %>" onclick="event.stopPropagation()">
+  <div class="product-card-media">
+    <img src="/images/<%= p.image %>" alt="<%= p.productName %>" onclick="event.stopPropagation()">
+  </div>
   <div class="price-tag">
     <% if (p.discount_price) { %>
       <span class="price-discount">$<%= Number(p.discount_price).toFixed(2) %></span>

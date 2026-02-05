@@ -30,12 +30,13 @@ function generateCode(prefix) {
   return `${safePrefix}-${raw}`;
 }
 
-async function createVoucher({ code, amount, discountType, expiresAt, userId, maxUses, createdByAdminId }) {
+async function createVoucher({ code, name, amount, discountType, expiresAt, userId, maxUses, createdByAdminId }) {
   const voucherCode = (code || generateCode('VCH')).toUpperCase();
   const safeType = discountType === 'percent' ? 'percent' : 'fixed';
-  const sql = 'INSERT INTO vouchers (code, amount, discount_type, user_id, max_uses, active, expires_at, created_by_admin_id) VALUES (?, ?, ?, ?, ?, 1, ?, ?)';
+  const sql = 'INSERT INTO vouchers (code, name, amount, discount_type, user_id, max_uses, active, expires_at, created_by_admin_id) VALUES (?, ?, ?, ?, ?, ?, 1, ?, ?)';
   const params = [
     voucherCode,
+    name || null,
     Number(amount || 0).toFixed(2),
     safeType,
     userId || null,

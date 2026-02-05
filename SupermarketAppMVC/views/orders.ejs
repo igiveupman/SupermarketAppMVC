@@ -12,6 +12,10 @@
     <% const isRefunded = refundState === 'refunded' || refundState === 'succeeded' || refundState === 'completed'; %>
     <% const refundTypeMap = { item_not_received: 'Item not received', item_damaged: 'Item arrived damaged', wrong_item: 'Wrong item received', changed_mind: 'Changed mind', other: 'Other' }; %>
     <% const refundTypeLabel = o.refund_request_type ? (refundTypeMap[o.refund_request_type] || o.refund_request_type) : null; %>
+    <% const refundableProviders = ['stripe','paypal','paynow']; %>
+    <% const paymentProvider = (o.payment_provider || '').toLowerCase(); %>
+    <% const providerDisplay = o.payment_provider ? o.payment_provider.charAt(0).toUpperCase() + o.payment_provider.slice(1) : 'Unknown'; %>
+    <% const supportsRefundByProvider = refundableProviders.includes(paymentProvider); %>
     <% const itemSubtotal = (itemsByOrder[o.id] || []).reduce((s,it)=> s + Number(it.total_price || 0), 0); %>
     <% const voucherAmt = Number(o.voucher_amount || 0); %>
     <% const deliveryFee = Number(o.delivery_fee || 0); %>
@@ -89,14 +93,14 @@
             <div class="small text-muted">Admin note: <%= o.refund_request_note %></div>
           <% } %>
         <% } else if (reqStatus === 'approved') { %>
-          <div class="small text-success">Refund approved.</div>
+          <div class="small text-success">Refunded successfully: $<%= Number(o.refund_amount || 0).toFixed(2) %></div>
           <% if (refundTypeLabel) { %>
             <div class="small text-muted">Reason type: <%= refundTypeLabel %></div>
           <% } %>
           <% if (o.refund_request_note) { %>
             <div class="small text-muted">Admin note: <%= o.refund_request_note %></div>
           <% } %>
-        <% } else { %>
+        <% } else if (supportsRefundByProvider) { %>
           <form action="/orders/<%= o.id %>/refund-request" method="post" class="refund-request">
             <label class="form-label fw-semibold">Request a refund</label>
             <select class="form-select mb-2" name="reason_type" required>
@@ -110,6 +114,8 @@
             <textarea class="form-control mb-2 refund-details" name="reason" rows="2" minlength="10" placeholder="Additional details (optional)."></textarea>
             <button class="btn btn-outline-danger btn-sm" type="submit" onclick="return confirm('Submit a refund request for this order?');">Submit Refund Request</button>
           </form>
+        <% } else { %>
+          <div class="small text-muted">Refunds are available only for Stripe or PayPal payments. This order used <%= providerDisplay %>.</div>
         <% } %>
       </div>
     </div>

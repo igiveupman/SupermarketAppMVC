@@ -51,14 +51,14 @@ async function postWithRetry(url, body, headers, attempts = 2) {
   throw lastErr;
 }
 
-// NETS QR for cart checkout (amount from cart total).
+// NETS QR for cart checkout (amount derived from current cart snapshot).
 exports.generateQrCode = async (req, res) => {
   const cart = req.session.cart || [];
   if (!cart.length) {
     req.flash('error', 'Your cart is empty.');
     return res.redirect('/cart');
   }
-  // Total is computed server-side to prevent client tampering.
+  // 1. Always compute cart total on the server (prevents client-side manipulation).
   const voucher = await vouchers.resolveAppliedVoucher(req);
   const pricing = computeCartPricing(cart, req.session.user, voucher);
   if (pricing.voucherRejected) {
@@ -75,13 +75,14 @@ exports.generateQrCode = async (req, res) => {
     });
   }
   try {
+    // 2. Build the NETS payload with our generated txn_id and the final amount.
     const requestBody = {
       txn_id: buildTxnId(),
       amt_in_dollars: cartTotal,
       notify_mobile: 0
     };
 
-    // NETS QR request (sandbox).
+    // 3. POST to the NETS QR endpoint (supports sandbox/production via NETS_API_BASE).
     const response = await postWithRetry(
       `${NETS_API_BASE}/api/v1/common/payments/nets-qr/request`,
       requestBody,
@@ -100,6 +101,7 @@ exports.generateQrCode = async (req, res) => {
       qrData.qr_code
     ) {
       const txnRetrievalRef = qrData.txn_retrieval_ref;
+      // 4. Store NETS reference in session so webhook polling/checkout knows it belongs to NETS.
       // Store NETS transaction reference for later status polling.
       if (req && req.session) {
         req.session.payment_provider = 'nets';
@@ -147,7 +149,7 @@ exports.generateQrCode = async (req, res) => {
   }
 };
 
-// NETS QR for subscriptions (fixed amount).
+// NETS QR for subscriptions (amount comes from the selected tier, not the cart).
 exports.generateQrCodeForAmount = async (req, res, amount) => {
   if (!process.env.NETS_API_KEY || !process.env.NETS_PROJECT_ID) {
     return res.render('netsQrFail', {

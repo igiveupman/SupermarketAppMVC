@@ -1,4 +1,4 @@
-const BASE_DELIVERY_FEE = 6.0;
+const BASE_DELIVERY_FEE = 3.0;
 const ESSENTIAL_FREE_THRESHOLD = 40.0;
 const GST_RATE = 0.10;
 

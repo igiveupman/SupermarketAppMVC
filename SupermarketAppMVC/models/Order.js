@@ -1,7 +1,7 @@
 /**
  * Order model
- * - Creates orders and optionally persists order_items
- * - Lists, fetches, and clears orders (optionally per-user)
+ * - Creates orders (with payment metadata) and optionally persists order_items snapshots for later refunds/invoices.
+ * - Lists, fetches, and clears orders (optionally per-user) and manages refund status/requests for captured payments.
  */
 const db = require('../db');
 

@@ -114,6 +114,11 @@ connection.query("ALTER TABLE vouchers ADD COLUMN discount_type VARCHAR(10) NOT 
         console.error('Failed to ensure discount_type column:', vErr.code || vErr);
     }
 });
+connection.query("ALTER TABLE vouchers ADD COLUMN name VARCHAR(120) NULL", (nErr) => {
+    if (nErr && nErr.code !== 'ER_DUP_FIELDNAME') {
+        console.error('Failed to ensure voucher name column:', nErr.code || nErr);
+    }
+});
 // Ensure voucher_redemptions table exists
 connection.query(
     'CREATE TABLE IF NOT EXISTS voucher_redemptions (' +
@@ -514,11 +519,11 @@ app.get('/paynow/return', checkAuthenticated, (req, res) => {
 });
 // NETS QR callbacks (cart or subscription)
 app.get('/nets-qr/success', checkAuthenticated, (req, res) => {
-    // For subscriptions, NETS success completes subscription upgrade.
+    // NETS QR success callback: webhook status is confirmed, so tag payment and continue checkout.
     if (req.session.subscription_payment_flow === 'nets') {
-        req.session.subscription_payment_flow = null;
-        req.session.subscription_nets_captured = true;
-        return SubscriptionController.complete(req, res);
+      req.session.subscription_payment_flow = null;
+      req.session.subscription_nets_captured = true;
+      return SubscriptionController.complete(req, res);
     }
     // For cart orders, hand off to checkout() to create the order.
     req.session.payment_flow = 'nets';
@@ -624,8 +629,12 @@ app.post('/api/paypal/subscription/capture-order', checkAuthenticated, Subscript
 // Stripe card payments (cart + subscription)
 app.post('/api/stripe/order-intent', checkAuthenticated, StripeController.createOrderIntent);
 app.post('/api/stripe/order-paynow-intent', checkAuthenticated, StripeController.createOrderPayNowIntent);
+app.post('/api/stripe/order-checkout-session', checkAuthenticated, StripeController.createOrderCheckoutSession);
 app.post('/stripe/order/complete', checkAuthenticated, StripeController.completeOrder);
+app.get('/stripe/checkout/success', checkAuthenticated, StripeController.checkoutSuccess);
 app.post('/api/stripe/subscription-intent', checkAuthenticated, StripeController.createSubscriptionIntent);
+app.post('/api/stripe/subscription-checkout-session', checkAuthenticated, StripeController.createSubscriptionCheckoutSession);
+app.get('/stripe/subscription/checkout/success', checkAuthenticated, StripeController.subscriptionCheckoutSuccess);
 app.post('/api/stripe/subscription-paynow-intent', checkAuthenticated, StripeController.createSubscriptionPayNowIntent);
 app.post('/stripe/subscription/complete', checkAuthenticated, StripeController.completeSubscription);
 app.get('/api/stripe/intent-status/:id', checkAuthenticated, StripeController.getIntentStatus);
